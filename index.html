@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FrotaForte - Acesso Restrito</title>
+    <title>FrotaForte - Cloud</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -273,28 +273,18 @@
         import { getDatabase, ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // =========================================================================
-        // >>> COLE SUAS CHAVES DO FIREBASE ABAIXO (DENTRO DAS ASPAS)
+        // CONFIGURAÇÕES DO FIREBASE (JÁ INSERIDAS CORRETAMENTE)
         // =========================================================================
-       const firebaseConfig = {
-
+        const firebaseConfig = {
             apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
-
             authDomain: "frotar-io.firebaseapp.com",
-
             databaseURL: "https://frotar-io-default-rtdb.firebaseio.com",
-
             projectId: "frotar-io",
-
             storageBucket: "frotar-io.firebasestorage.app",
-
             messagingSenderId: "68520426030",
-
             appId: "1:68520426030:web:91333e358781671648fdbf",
-
             measurementId: "G-RK7EW2NYJM"
-
-            };
-
+        };
 
         // Verifica se está rodando localmente (file://)
         if (window.location.protocol === 'file:') {
