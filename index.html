@@ -216,8 +216,20 @@
                         <div><p class="text-[10px] font-bold text-slate-400 uppercase">KM Atual</p><p class="text-lg font-bold text-blue-600" id="det-km">-</p></div>
                         <div><button onclick="openMaintRegister()" class="w-full h-full bg-slate-800 text-white rounded-lg text-xs font-bold shadow hover:bg-slate-900 transition flex flex-col items-center justify-center p-1"><i class="fas fa-plus-circle mb-1"></i> Registrar<br>Manutenção</button></div>
                     </div>
+                    <div class="col-span-3 mt-2">
+                        <button onclick="mostrarServicosPersonalizados()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                            <i class="fas fa-star"></i> Ver Serviços Personalizados
+                        </button>
+                    </div>
                 </div>
-                <div id="content-history"><div id="det-history-list" class="space-y-2"></div></div>
+                <div id="content-history">
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="filtrarHistorico('todos')" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded transition">Todos</button>
+                        <button onclick="filtrarHistorico('padrao')" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-600 px-3 py-1 rounded transition">Padrão</button>
+                        <button onclick="filtrarHistorico('personalizado')" class="text-xs bg-purple-100 hover:bg-purple-200 text-purple-600 px-3 py-1 rounded transition">Personalizado</button>
+                    </div>
+                    <div id="det-history-list" class="space-y-2"></div>
+                </div>
                 <div id="content-config" class="hidden">
                     <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-r-lg"><p class="text-sm text-amber-800"><b>Atenção:</b> Informe o KM da <b>ÚLTIMA</b> troca. O sistema calculará a próxima.</p></div>
                     <form id="form-config" class="space-y-3 bg-white p-4 rounded-xl border border-slate-200"></form>
@@ -247,14 +259,107 @@
     </div>
 
     <div id="modal-maint-register" class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-            <h3 class="text-lg font-bold mb-4">Nova Manutenção</h3>
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Nova Manutenção</h3>
+                <button onclick="document.getElementById('modal-maint-register').classList.add('hidden')" 
+                        class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
             <div class="space-y-4">
-                <div><label class="text-xs font-bold text-slate-500 uppercase">Tipo de Serviço</label><select id="reg-type" class="w-full p-3 bg-slate-50 border rounded-lg"></select></div>
-                <div><label class="text-xs font-bold text-slate-500 uppercase">Descrição/Obs</label><input type="text" id="reg-desc" placeholder="Ex: Óleo 5W30 Sintético" class="w-full p-3 bg-slate-50 border rounded-lg"></div>
-                <div class="flex gap-2">
-                    <button onclick="document.getElementById('modal-maint-register').classList.add('hidden')" class="flex-1 py-2 text-slate-500">Cancelar</button>
-                    <button onclick="confirmMaintRegister()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold">Salvar</button>
+                <!-- Tipo de Serviço -->
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Tipo de Serviço *</label>
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" onclick="selecionarTipoServico('padrao')" 
+                                id="btn-tipo-padrao" 
+                                class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold transition">
+                            <i class="fas fa-list-check mr-1"></i> Serviço Padrão
+                        </button>
+                        <button type="button" onclick="selecionarTipoServico('personalizado')" 
+                                id="btn-tipo-personalizado" 
+                                class="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition">
+                            <i class="fas fa-plus-circle mr-1"></i> Personalizado
+                        </button>
+                    </div>
+                    
+                    <!-- Serviços Padrão (atual) -->
+                    <div id="container-padrao">
+                        <select id="reg-type" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <option value="">Selecione um serviço...</option>
+                            <option value="rev">Revisão Preventiva</option>
+                            <option value="oleo">Troca de Óleo</option>
+                            <option value="past">Pastilhas de Freio</option>
+                            <option value="corr">Correia/Corrente</option>
+                            <option value="disc">Disco de Freio</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Serviço Personalizado (novo) -->
+                    <div id="container-personalizado" class="hidden">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Nome do Serviço *</label>
+                                <input type="text" id="reg-custom-name" 
+                                       class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                                       placeholder="Ex: Troca de Bateria, Alinhamento, etc"
+                                       list="sugestoes-servicos">
+                                <datalist id="sugestoes-servicos">
+                                    <option value="Troca de Bateria">
+                                    <option value="Alinhamento e Balanceamento">
+                                    <option value="Troca de Pneus">
+                                    <option value="Lavagem Completa">
+                                    <option value="Vistoria Periódica">
+                                    <option value="Troca de Filtro de Ar">
+                                    <option value="Troca de Filtro de Combustível">
+                                    <option value="Higienização Interna">
+                                </datalist>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Próxima Troca (opcional)</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="reg-custom-next-km" 
+                                           class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                                           placeholder="Ex: 50000 km">
+                                    <span class="text-slate-600 text-sm font-medium">km</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">Deixe em branco se não há periodicidade definida</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Descrição/Obs (comum para ambos) -->
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Descrição/Observações</label>
+                    <textarea id="reg-desc" rows="3" 
+                              class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                              placeholder="Ex: Bateria Moura 60Ah, garantia 12 meses, etc"></textarea>
+                </div>
+                
+                <!-- Custo (opcional) -->
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Custo (R$)</label>
+                    <div class="flex items-center">
+                        <span class="bg-slate-100 border border-r-0 border-slate-200 p-3 rounded-l-lg text-slate-600">R$</span>
+                        <input type="number" id="reg-custo" step="0.01" min="0"
+                               class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-r-lg"
+                               placeholder="0,00">
+                    </div>
+                </div>
+                
+                <!-- Botões -->
+                <div class="flex gap-2 pt-2">
+                    <button onclick="document.getElementById('modal-maint-register').classList.add('hidden')" 
+                            class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmMaintRegister()" 
+                            class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg">
+                        <i class="fas fa-save mr-1"></i> Salvar
+                    </button>
                 </div>
             </div>
         </div>
@@ -273,13 +378,13 @@
         </div>
     </div>
 
-    <!-- SCRIPT CORRIGIDO E SIMPLIFICADO -->
+    <!-- SCRIPT CORRIGIDO E COMPLETO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIGURAÇÃO DO FIREBASE (COLE SUAS CHAVES AQUI)
+        // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
             authDomain: "frotar-io.firebaseapp.com",
@@ -374,12 +479,13 @@
         };
 
         // =========================================================================
-        // SISTEMA PRINCIPAL (MESMO CÓDIGO ANTIGO)
+        // SISTEMA PRINCIPAL
         // =========================================================================
         
         let localVehicles = [];
         let localUnits = [];
         let currentVehicleId = null;
+        let tipoServicoAtual = 'padrao'; // 'padrao' ou 'personalizado'
 
         const REGRAS = [
             {id: 'rev', desc: 'Revisão Preventiva', km: 10000, type: 'fixed'},
@@ -388,6 +494,34 @@
             {id: 'corr', desc: 'Correia/Corrente', km: 35000, type: 'relative'},
             {id: 'disc', desc: 'Disco de Freio', km: 40000, type: 'relative'}
         ];
+
+        // Função para alternar entre tipo padrão e personalizado
+        window.selecionarTipoServico = (tipo) => {
+            tipoServicoAtual = tipo;
+            
+            // Atualizar botões
+            document.getElementById('btn-tipo-padrao').className = 
+                tipo === 'padrao' 
+                ? 'flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold transition'
+                : 'flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition';
+            
+            document.getElementById('btn-tipo-personalizado').className = 
+                tipo === 'personalizado' 
+                ? 'flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold transition'
+                : 'flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition';
+            
+            // Mostrar/ocultar containers
+            document.getElementById('container-padrao').classList.toggle('hidden', tipo !== 'padrao');
+            document.getElementById('container-personalizado').classList.toggle('hidden', tipo !== 'personalizado');
+            
+            // Limpar campos ao alternar
+            if (tipo === 'personalizado') {
+                document.getElementById('reg-custom-name').value = '';
+                document.getElementById('reg-custom-next-km').value = '';
+            } else {
+                document.getElementById('reg-type').value = '';
+            }
+        };
 
         function startApp() {
             console.log('Iniciando aplicação...');
@@ -405,7 +539,7 @@
             });
         }
 
-        // FUNÇÕES DE INTERFACE (mantidas do código original)
+        // FUNÇÕES DE INTERFACE
         window.switchPage = (page) => {
             document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -476,6 +610,7 @@
                 });
             } else {
                 data.lastMaint = {};
+                data.nextMaint = {};
                 REGRAS.forEach(r => { if(r.type === 'relative') data.lastMaint[r.id] = 0; });
                 push(ref(db, 'vehicles'), data).then(() => closeModals());
             }
@@ -530,10 +665,60 @@
                 }
                 history.sort((a,b) => b.date - a.date);
                 history.forEach(h => {
-                    hList.innerHTML += `<div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-lg shadow-sm"><div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0"><i class="fas fa-check"></i></div><div class="flex-1"><p class="text-sm font-bold text-slate-800">${h.description}</p><p class="text-xs text-slate-400">Feito com ${h.km.toLocaleString()} km</p></div><div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">${new Date(h.date).toLocaleDateString('pt-BR')}</div></div>`;
+                    let icon = 'fa-check';
+                    let iconColor = 'bg-blue-100 text-blue-600';
+                    let tipoTexto = 'Serviço Padrão';
+                    
+                    if (h.type === 'personalizado') {
+                        icon = 'fa-tools';
+                        iconColor = 'bg-purple-100 text-purple-600';
+                        tipoTexto = 'Serviço Personalizado';
+                    } else if (h.tipoId && h.tipoId.startsWith('custom_')) {
+                        icon = 'fa-star';
+                        iconColor = 'bg-amber-100 text-amber-600';
+                        tipoTexto = 'Serviço Personalizado';
+                    }
+                    
+                    hList.innerHTML += `
+                        <div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-lg shadow-sm hover:bg-slate-50 transition" data-tipo="${h.type || 'padrao'}">
+                            <div class="${iconColor} w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-slate-800">${h.description}</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-slate-400">${tipoTexto}</span>
+                                    <span class="text-xs text-slate-500">•</span>
+                                    <span class="text-xs text-slate-400">Feito com ${h.km.toLocaleString()} km</span>
+                                </div>
+                                ${h.custo && h.custo !== '0' ? `<p class="text-xs font-bold text-green-600 mt-1">Custo: R$ ${parseFloat(h.custo).toFixed(2)}</p>` : ''}
+                            </div>
+                            <div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                                ${new Date(h.date).toLocaleDateString('pt-BR')}
+                            </div>
+                        </div>`;
                 });
             }, {onlyOnce: true});
         }
+
+        // Função para filtrar histórico
+        window.filtrarHistorico = function(tipo) {
+            const items = document.querySelectorAll('#det-history-list > div');
+            items.forEach(item => {
+                const itemTipo = item.getAttribute('data-tipo');
+                switch(tipo) {
+                    case 'todos':
+                        item.classList.remove('hidden');
+                        break;
+                    case 'padrao':
+                        item.classList.toggle('hidden', itemTipo !== 'padrao' && !itemTipo.includes('custom'));
+                        break;
+                    case 'personalizado':
+                        item.classList.toggle('hidden', itemTipo !== 'personalizado' && !itemTipo.includes('custom'));
+                        break;
+                }
+            });
+        };
 
         window.editVehicleFromDetails = () => {
             closeModals();
@@ -552,32 +737,133 @@
         };
 
         window.openMaintRegister = () => {
+            // Resetar para padrão
+            tipoServicoAtual = 'padrao';
+            selecionarTipoServico('padrao');
+            
+            // Preencher dropdown padrão
             const sel = document.getElementById('reg-type');
-            sel.innerHTML = '';
+            sel.innerHTML = '<option value="">Selecione um serviço...</option>';
             REGRAS.forEach(r => sel.innerHTML += `<option value="${r.id}">${r.desc}</option>`);
-            sel.innerHTML += `<option value="other">Outros</option>`;
+            sel.innerHTML += `<option value="other">Outros (personalizado)</option>`;
+            
+            // Limpar outros campos
             document.getElementById('reg-desc').value = '';
+            document.getElementById('reg-custo').value = '';
+            document.getElementById('reg-custom-name').value = '';
+            document.getElementById('reg-custom-next-km').value = '';
+            
+            // Mostrar modal
             document.getElementById('modal-maint-register').classList.remove('hidden');
         };
 
         window.confirmMaintRegister = () => {
-            const typeId = document.getElementById('reg-type').value;
-            const descInput = document.getElementById('reg-desc').value;
-            let descFinal = descInput;
-            const regra = REGRAS.find(r => r.id === typeId);
-            if(regra) descFinal = regra.desc + (descInput ? ` (${descInput})` : '');
-            else if(!descFinal) { alert("Digite uma descrição."); return; }
-
             const v = localVehicles.find(i => i.id === currentVehicleId);
+            if (!v) return;
+            
+            // Verificar custo alto
+            const custo = parseFloat(document.getElementById('reg-custo').value) || 0;
+            if (custo > 1000) {
+                if (!confirm(`⚠️ ATENÇÃO: O custo informado é R$ ${custo.toFixed(2)}.\nDeseja continuar?`)) {
+                    return;
+                }
+            }
+            
+            let descFinal = '';
+            let tipoId = '';
+            const custoValor = document.getElementById('reg-custo').value || '0';
+            const descInput = document.getElementById('reg-desc').value;
+            
+            // Verificar qual tipo de serviço foi selecionado
+            if (tipoServicoAtual === 'padrao') {
+                const tipoSelecionado = document.getElementById('reg-type').value;
+                
+                if (!tipoSelecionado) {
+                    alert("Selecione um tipo de serviço!");
+                    return;
+                }
+                
+                tipoId = tipoSelecionado;
+                const regra = REGRAS.find(r => r.id === tipoSelecionado);
+                
+                if (regra) {
+                    descFinal = regra.desc + (descInput ? ` - ${descInput}` : '');
+                } else if (tipoSelecionado === 'other') {
+                    if (!descInput) {
+                        alert("Para 'Outros', digite uma descrição!");
+                        return;
+                    }
+                    descFinal = descInput;
+                    tipoId = 'custom_' + Date.now();
+                }
+                
+            } else { // Serviço personalizado
+                const nomeCustom = document.getElementById('reg-custom-name').value;
+                const nextKmCustom = document.getElementById('reg-custom-next-km').value;
+                
+                if (!nomeCustom) {
+                    alert("Digite o nome do serviço personalizado!");
+                    return;
+                }
+                
+                tipoId = 'custom_' + Date.now();
+                descFinal = nomeCustom + (descInput ? ` - ${descInput}` : '');
+                
+                // Se informou próxima troca, salvar como configuração personalizada
+                if (nextKmCustom && !isNaN(nextKmCustom)) {
+                    const customKey = 'custom_' + nomeCustom.replace(/\s+/g, '_').toLowerCase();
+                    const customConfig = {
+                        nome: nomeCustom,
+                        intervalo: parseInt(nextKmCustom),
+                        descricao: descInput || ''
+                    };
+                    
+                    // Salvar configuração personalizada
+                    const customRef = ref(db, `customServices/${currentVehicleId}/${customKey}`);
+                    set(customRef, customConfig);
+                    
+                    // Atualizar lastMaint e nextMaint do veículo
+                    update(ref(db, `vehicles/${currentVehicleId}/lastMaint/${customKey}`), v.km);
+                    update(ref(db, `vehicles/${currentVehicleId}/nextMaint/${customKey}`), parseInt(nextKmCustom));
+                }
+            }
+            
+            // Adicionar custo à descrição se informado
+            if (custoValor && custoValor !== '0') {
+                descFinal += ` (Custo: R$ ${parseFloat(custoValor).toFixed(2)})`;
+            }
+            
+            // Preparar updates para o Firebase
             const updates = {};
-            if(regra) updates[`vehicles/${currentVehicleId}/lastMaint/${typeId}`] = v.km;
+            
+            // Se for serviço padrão (não personalizado), atualizar lastMaint
+            if (tipoServicoAtual === 'padrao' && tipoId !== 'custom_' + Date.now() && !tipoId.startsWith('custom_')) {
+                const regra = REGRAS.find(r => r.id === tipoId);
+                if (regra) {
+                    updates[`vehicles/${currentVehicleId}/lastMaint/${tipoId}`] = v.km;
+                }
+            }
+            
+            // Salvar no histórico
             const newHistoryKey = push(ref(db, `history/${currentVehicleId}`)).key;
-            updates[`history/${currentVehicleId}/${newHistoryKey}`] = { date: Date.now(), km: v.km, description: descFinal };
-
+            const historyData = { 
+                date: Date.now(), 
+                km: v.km, 
+                description: descFinal,
+                type: tipoServicoAtual,
+                tipoId: tipoId,
+                custo: custoValor
+            };
+            
+            updates[`history/${currentVehicleId}/${newHistoryKey}`] = historyData;
+            
+            // Executar atualizações
             update(ref(db), updates).then(() => {
                 document.getElementById('modal-maint-register').classList.add('hidden');
-                alert("Manutenção registrada!");
-                loadVehicleDetails(currentVehicleId);
+                alert("Serviço registrado com sucesso!");
+                loadVehicleDetails(currentVehicleId); // Recarregar histórico
+            }).catch(error => {
+                alert("Erro ao salvar: " + error.message);
             });
         };
 
@@ -593,6 +879,94 @@
                 alert("Configuração salva!"); 
                 closeModals(); 
             });
+        };
+
+        // Função para mostrar serviços personalizados
+        window.mostrarServicosPersonalizados = function() {
+            const v = localVehicles.find(item => item.id === currentVehicleId);
+            if (!v) {
+                alert("Veículo não encontrado!");
+                return;
+            }
+            
+            let html = `<div class="bg-white rounded-xl p-4 border border-slate-200">
+                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fas fa-star text-amber-500"></i>
+                    Serviços Personalizados - ${v.brand}
+                </h3>`;
+            
+            if (v.nextMaint) {
+                const customServices = Object.keys(v.nextMaint).filter(key => key.startsWith('custom_'));
+                
+                if (customServices.length === 0) {
+                    html += `<p class="text-slate-400 text-center py-4">Nenhum serviço personalizado configurado.</p>`;
+                } else {
+                    customServices.forEach(key => {
+                        const nomeServico = key.replace('custom_', '').replace(/_/g, ' ');
+                        const intervalo = v.nextMaint[key];
+                        const ultimaTroca = v.lastMaint && v.lastMaint[key] ? v.lastMaint[key] : 0;
+                        const proximaTroca = ultimaTroca > 0 ? ultimaTroca + intervalo : "Indefinido";
+                        const falta = proximaTroca !== "Indefinido" ? proximaTroca - v.km : 0;
+                        
+                        html += `
+                            <div class="mb-3 p-3 border border-slate-100 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="font-bold text-slate-700">${nomeServico}</div>
+                                        <div class="text-xs text-slate-500 mt-1">
+                                            Intervalo: ${intervalo.toLocaleString()} km
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs ${falta <= 1000 ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                            ${falta <= 1000 ? `⚠️ Faltam ${falta}km` : '✅ Em dia'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
+                                    <div class="bg-slate-50 p-2 rounded">
+                                        <div class="text-slate-400">Última</div>
+                                        <div class="font-bold">${ultimaTroca > 0 ? ultimaTroca.toLocaleString() + ' km' : 'Nunca'}</div>
+                                    </div>
+                                    <div class="bg-blue-50 p-2 rounded">
+                                        <div class="text-blue-400">Próxima</div>
+                                        <div class="font-bold text-blue-600">${proximaTroca !== "Indefinido" ? proximaTroca.toLocaleString() + ' km' : 'Indefinido'}</div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                }
+            } else {
+                html += `<p class="text-slate-400 text-center py-4">Nenhum serviço personalizado configurado.</p>`;
+            }
+            
+            html += `<div class="mt-4">
+                <button onclick="closeCustomServices()" class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-900 transition">
+                    Fechar
+                </button>
+            </div>`;
+            
+            html += `</div>`;
+            
+            // Criar modal dinâmico
+            const modal = document.createElement('div');
+            modal.id = 'modal-custom-services';
+            modal.className = 'fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm';
+            modal.innerHTML = `
+                <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+                    ${html}
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+
+        // Função para fechar o modal de serviços personalizados
+        window.closeCustomServices = function() {
+            const modal = document.getElementById('modal-custom-services');
+            if (modal) {
+                modal.remove();
+            }
         };
 
         function updateUI() {
@@ -639,12 +1013,54 @@
                         const falta = nextKm - v.km;
                         if(falta <= 1000) {
                             alertsCount++;
-                            const color = falta < 0 ? 'bg-red-50 border-red-500 text-red-700' : 'bg-amber-50 border-amber-500 text-amber-700';
-                            const msg = falta < 0 ? `Vencida há ${Math.abs(falta)}km` : `Faltam ${falta}km`;
+                            const color = falta < 0 ? 'bg-red-50 border-red-500 text-red-700' : 
+                                          falta <= 200 ? 'bg-red-50 border-red-500 text-red-700' : 
+                                          'bg-amber-50 border-amber-500 text-amber-700';
+                            const msg = falta < 0 ? `Vencida há ${Math.abs(falta).toLocaleString()}km` : 
+                                        `Faltam ${falta.toLocaleString()}km`;
                             alertBox.innerHTML += `<div class="p-3 rounded-lg border-l-4 ${color} flex justify-between items-center mb-2"><div><div class="text-sm font-bold text-slate-700">${v.brand} <span class="text-xs font-normal">(${v.plateOff})</span></div><div class="text-xs font-bold">${r.desc}: ${msg}</div></div><i class="fas fa-tools opacity-50"></i></div>`;
                         }
                     }
                 });
+                
+                // Verificar serviços personalizados com próxima troca definida
+                if (v.nextMaint) {
+                    Object.keys(v.nextMaint).forEach(customKey => {
+                        if (customKey.startsWith('custom_')) {
+                            const nextKm = v.nextMaint[customKey];
+                            const lastServiceKm = v.lastMaint && v.lastMaint[customKey] ? v.lastMaint[customKey] : 0;
+                            const nomeServico = customKey.replace('custom_', '').replace(/_/g, ' ');
+                            
+                            if (nextKm && lastServiceKm) {
+                                const proximaTroca = lastServiceKm + nextKm;
+                                const falta = proximaTroca - v.km;
+                                
+                                if (falta <= 1000) {
+                                    alertsCount++;
+                                    const color = falta < 0 ? 'bg-red-50 border-red-500 text-red-700' : 
+                                                  falta <= 200 ? 'bg-red-50 border-red-500 text-red-700' : 
+                                                  'bg-amber-50 border-amber-500 text-amber-700';
+                                    const msg = falta < 0 ? `Vencida há ${Math.abs(falta).toLocaleString()}km` : 
+                                                `Faltam ${falta.toLocaleString()}km`;
+                                    
+                                    alertBox.innerHTML += `
+                                        <div class="p-3 rounded-lg border-l-4 ${color} flex justify-between items-center mb-2">
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-700">
+                                                    ${v.brand} <span class="text-xs font-normal">(${v.plateOff})</span>
+                                                </div>
+                                                <div class="text-xs font-bold flex items-center gap-1">
+                                                    <i class="fas fa-star text-amber-500"></i>
+                                                    ${nomeServico}: ${msg}
+                                                </div>
+                                            </div>
+                                            <i class="fas fa-tools opacity-50"></i>
+                                        </div>`;
+                                }
+                            }
+                        }
+                    });
+                }
             });
             document.getElementById('dash-v-count').textContent = localVehicles.length;
             document.getElementById('dash-alerts').textContent = alertsCount;
