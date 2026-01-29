@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FrotaForte - Cloud</title>
+    <title>FrotaForte - Acesso Restrito</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,17 +23,23 @@
         .tab-btn.active { border-bottom-color: #2563eb; color: #2563eb; }
         
         /* Spinner Loader */
-        #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; justify-content: center; items-center; transition: opacity 0.5s; }
+        #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
         
         /* Área de Login */
-        #login-screen { position: fixed; inset: 0; background: #f1f5f9; z-index: 5000; display: flex; justify-content: center; items-center; }
+        #login-screen { position: fixed; inset: 0; background: #f1f5f9; z-index: 5000; display: flex; justify-content: center; align-items: center; }
+        
+        /* Classe para esconder elementos */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="text-slate-800 h-screen overflow-hidden">
 
-    <div id="loader"><div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div></div>
+    <div id="loader">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
+        <div class="ml-4 text-slate-600 font-medium">Inicializando FrotaForte...</div>
+    </div>
 
-    <div id="login-screen">
+    <div id="login-screen" class="hidden">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 fade-in">
             <div class="text-center mb-8">
                 <div class="inline-flex bg-blue-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-200 mb-4">
@@ -58,9 +64,9 @@
             </form>
             <div id="login-error" class="hidden mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center font-bold border border-red-200"></div>
             
-            <p id="protocol-warning" class="hidden text-amber-600 text-xs text-center mt-4 bg-amber-50 p-2 rounded border border-amber-200">
-                ⚠️ Atenção: O login do Google não funciona abrindo o arquivo direto. Use o GitHub Pages.
-            </p>
+            <div id="protocol-warning" class="mt-4 p-3 bg-amber-50 text-amber-600 text-sm rounded-lg text-center font-bold border border-amber-200">
+                ⚠️ Sistema de Gestão de Frota - Versão Online
+            </div>
         </div>
     </div>
 
@@ -267,14 +273,13 @@
         </div>
     </div>
 
+    <!-- SCRIPT CORRIGIDO E SIMPLIFICADO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // =========================================================================
-        // CONFIGURAÇÕES DO FIREBASE (JÁ INSERIDAS CORRETAMENTE)
-        // =========================================================================
+        // CONFIGURAÇÃO DO FIREBASE (COLE SUAS CHAVES AQUI)
         const firebaseConfig = {
             apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
             authDomain: "frotar-io.firebaseapp.com",
@@ -286,37 +291,49 @@
             measurementId: "G-RK7EW2NYJM"
         };
 
-        // Verifica se está rodando localmente (file://)
-        if (window.location.protocol === 'file:') {
-            document.getElementById('protocol-warning').classList.remove('hidden');
-        }
-
+        // INICIALIZAÇÃO
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // =========================================================================
-        // SISTEMA DE LOGIN (AUTH)
-        // =========================================================================
-        
+        // ELEMENTOS DA PÁGINA
         const loginScreen = document.getElementById('login-screen');
         const appContent = document.getElementById('app-content');
         const loader = document.getElementById('loader');
 
+        // 1. PRIMEIRO: SEMPRE REMOVE O LOADER APÓS 2 SEGUNDOS (GARANTIA)
+        setTimeout(() => {
+            loader.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            console.log('Garantia: Loader removido após timeout');
+        }, 2000);
+
+        // 2. SISTEMA DE AUTENTICAÇÃO SIMPLIFICADO
         onAuthStateChanged(auth, (user) => {
+            console.log('Estado de autenticação:', user ? 'Usuário logado' : 'Sem usuário');
+            
+            // Remove o loader em qualquer caso
+            loader.classList.add('hidden');
+            
             if (user) {
-                // Logado
+                // Usuário está logado
                 loginScreen.classList.add('hidden');
                 appContent.classList.remove('hidden');
                 startApp();
             } else {
-                // Deslogado
+                // Nenhum usuário logado
                 loginScreen.classList.remove('hidden');
                 appContent.classList.add('hidden');
-                document.getElementById('loader').classList.add('hidden');
             }
+        }, (error) => {
+            // Em caso de erro, mostra tela de login
+            console.error('Erro Firebase:', error);
+            loader.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            appContent.classList.add('hidden');
         });
 
+        // LOGIN
         document.getElementById('form-login').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -325,34 +342,39 @@
             const errorMsg = document.getElementById('login-error');
 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+            btn.disabled = true;
             errorMsg.classList.add('hidden');
 
             signInWithEmailAndPassword(auth, email, pass)
                 .then(() => {
-                    // Auth observer will handle UI
+                    // Sucesso - o onAuthStateChanged vai cuidar do resto
                 })
                 .catch((error) => {
                     btn.innerHTML = 'Entrar no Sistema';
+                    btn.disabled = false;
+                    
                     let msg = "Erro ao entrar.";
                     if (error.code === 'auth/invalid-credential') msg = "Email ou senha incorretos.";
-                    if (error.code === 'auth/network-request-failed') msg = "Erro de conexão (Verifique se não está rodando localmente)";
+                    if (error.code === 'auth/user-not-found') msg = "Usuário não encontrado.";
+                    if (error.code === 'auth/wrong-password') msg = "Senha incorreta.";
+                    if (error.code === 'auth/too-many-requests') msg = "Muitas tentativas. Tente mais tarde.";
                     
                     errorMsg.textContent = msg;
                     errorMsg.classList.remove('hidden');
-                    console.error(error.code);
                 });
         });
 
-        // Função Logout Global
+        // LOGOUT
         window.logout = () => {
             if(confirm("Deseja realmente sair do FrotaForte?")) {
-                signOut(auth).then(() => window.location.reload());
+                signOut(auth).then(() => {
+                    window.location.reload();
+                });
             }
         };
 
-
         // =========================================================================
-        // LÓGICA DO SISTEMA
+        // SISTEMA PRINCIPAL (MESMO CÓDIGO ANTIGO)
         // =========================================================================
         
         let localVehicles = [];
@@ -368,11 +390,12 @@
         ];
 
         function startApp() {
+            console.log('Iniciando aplicação...');
+            
             onValue(ref(db, 'units'), (snapshot) => {
                 localUnits = [];
                 snapshot.forEach(child => localUnits.push({ id: child.key, ...child.val() }));
                 updateUI();
-                document.getElementById('loader').classList.add('hidden');
             });
 
             onValue(ref(db, 'vehicles'), (snapshot) => {
@@ -382,7 +405,7 @@
             });
         }
 
-        // Funções Globais UI
+        // FUNÇÕES DE INTERFACE (mantidas do código original)
         window.switchPage = (page) => {
             document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -399,7 +422,10 @@
         };
 
         window.openModal = (t) => {
-            if(t === 'vehicle' && localUnits.length === 0) { alert("Cadastre uma Unidade primeiro."); return; }
+            if(t === 'vehicle' && localUnits.length === 0) { 
+                alert("Cadastre uma Unidade primeiro."); 
+                return; 
+            }
             if(t === 'vehicle') {
                 document.getElementById('v-id').value = ''; 
                 document.getElementById('modal-title-vehicle').textContent = 'Adicionar Veículo';
@@ -412,14 +438,19 @@
             document.getElementById('modal-' + t).classList.remove('hidden');
         };
 
-        window.closeModals = () => { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); };
+        window.closeModals = () => { 
+            document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); 
+        };
 
         // CRUD
         window.saveUnit = (e) => {
             e.preventDefault();
             const name = document.getElementById('u-name').value.trim();
             if(!name) return;
-            push(ref(db, 'units'), { name: name }).then(() => { closeModals(); document.getElementById('u-name').value = ''; });
+            push(ref(db, 'units'), { name: name }).then(() => { 
+                closeModals(); 
+                document.getElementById('u-name').value = ''; 
+            });
         };
 
         window.saveVehicle = (e) => {
@@ -439,7 +470,10 @@
             if(isNaN(data.km)) { alert("KM inválido."); return; }
 
             if (idStr) {
-                update(ref(db, 'vehicles/' + idStr), data).then(() => { closeModals(); if(currentVehicleId === idStr) loadVehicleDetails(idStr); });
+                update(ref(db, 'vehicles/' + idStr), data).then(() => { 
+                    closeModals(); 
+                    if(currentVehicleId === idStr) loadVehicleDetails(idStr); 
+                });
             } else {
                 data.lastMaint = {};
                 REGRAS.forEach(r => { if(r.type === 'relative') data.lastMaint[r.id] = 0; });
@@ -490,7 +524,10 @@
                 hList.innerHTML = '';
                 const history = [];
                 snapshot.forEach(c => history.push(c.val()));
-                if(history.length === 0) { hList.innerHTML = '<div class="text-center p-4 bg-slate-50 rounded-lg text-slate-400 text-sm">Nenhum registro.</div>'; return; }
+                if(history.length === 0) { 
+                    hList.innerHTML = '<div class="text-center p-4 bg-slate-50 rounded-lg text-slate-400 text-sm">Nenhum registro.</div>'; 
+                    return; 
+                }
                 history.sort((a,b) => b.date - a.date);
                 history.forEach(h => {
                     hList.innerHTML += `<div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-lg shadow-sm"><div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0"><i class="fas fa-check"></i></div><div class="flex-1"><p class="text-sm font-bold text-slate-800">${h.description}</p><p class="text-xs text-slate-400">Feito com ${h.km.toLocaleString()} km</p></div><div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">${new Date(h.date).toLocaleDateString('pt-BR')}</div></div>`;
@@ -552,7 +589,10 @@
                     updates[`vehicles/${currentVehicleId}/lastMaint/${r.id}`] = val ? parseInt(val) : 0;
                 }
             });
-            update(ref(db), updates).then(() => { alert("Configuração salva!"); closeModals(); });
+            update(ref(db), updates).then(() => { 
+                alert("Configuração salva!"); 
+                closeModals(); 
+            });
         };
 
         function updateUI() {
@@ -636,6 +676,7 @@
             link.click();
         };
 
+        // CONFIGURA EVENT LISTENERS
         document.addEventListener('DOMContentLoaded', () => {
             const formV = document.getElementById('form-vehicle');
             if(formV) formV.addEventListener('submit', window.saveVehicle);
