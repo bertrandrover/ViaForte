@@ -37,16 +37,16 @@
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 fade-in">
             <div class="text-center mb-8">
                 <div class="inline-flex bg-blue-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-200 mb-4">
-                    <i class="fas fa-cloud text-3xl"></i>
+                    <i class="fas fa-shield-alt text-3xl"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-slate-900 tracking-tight">FrotaForte <span class="text-blue-600">Cloud</span></h1>
-                <p class="text-slate-400 text-sm mt-1">Acesso Restrito</p>
+                <p class="text-slate-400 text-sm mt-1">Acesso Administrativo</p>
             </div>
             
             <form id="form-login" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Email</label>
-                    <input type="email" id="login-email" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white outline-none transition" placeholder="admin@empresa.com" required>
+                    <input type="email" id="login-email" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white outline-none transition" placeholder="admin@frotaforte.com" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Senha</label>
@@ -56,7 +56,11 @@
                     Entrar no Sistema
                 </button>
             </form>
-            <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden font-bold"></p>
+            <div id="login-error" class="hidden mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center font-bold border border-red-200"></div>
+            
+            <p id="protocol-warning" class="hidden text-amber-600 text-xs text-center mt-4 bg-amber-50 p-2 rounded border border-amber-200">
+                ⚠️ Atenção: O login do Google não funciona abrindo o arquivo direto. Use o GitHub Pages.
+            </p>
         </div>
     </div>
 
@@ -65,10 +69,10 @@
         <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-blue-600 p-3 rounded-xl text-white shadow-lg shadow-blue-200">
-                    <i class="fas fa-cloud text-xl"></i>
+                    <i class="fas fa-truck-moving text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-slate-900">FlotaGest <span class="text-blue-600">Cloud</span></h1>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">FrotaForte <span class="text-blue-600">Cloud</span></h1>
                     <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Gestão Online</p>
                 </div>
             </div>
@@ -76,7 +80,7 @@
                 <button onclick="exportCSV()" class="bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-600">
                     <i class="fas fa-file-csv text-green-600"></i> Relatório
                 </button>
-                <button onclick="logout()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-md">
+                <button onclick="logout()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-md hover:bg-red-600">
                     <i class="fas fa-sign-out-alt"></i> Sair
                 </button>
             </div>
@@ -271,15 +275,31 @@
         // =========================================================================
         // >>> COLE SUAS CHAVES DO FIREBASE ABAIXO (DENTRO DAS ASPAS)
         // =========================================================================
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY_AQUI",
-            authDomain: "SEU_PROJETO.firebaseapp.com",
-            databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-            projectId: "SEU_PROJETO_ID",
-            storageBucket: "SEU_PROJETO.appspot.com",
-            messagingSenderId: "SEU_ID",
-            appId: "SEU_APP_ID"
-        };
+       const firebaseConfig = {
+
+            apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
+
+            authDomain: "frotar-io.firebaseapp.com",
+
+            databaseURL: "https://frotar-io-default-rtdb.firebaseio.com",
+
+            projectId: "frotar-io",
+
+            storageBucket: "frotar-io.firebasestorage.app",
+
+            messagingSenderId: "68520426030",
+
+            appId: "1:68520426030:web:91333e358781671648fdbf",
+
+            measurementId: "G-RK7EW2NYJM"
+
+            };
+
+
+        // Verifica se está rodando localmente (file://)
+        if (window.location.protocol === 'file:') {
+            document.getElementById('protocol-warning').classList.remove('hidden');
+        }
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -293,22 +313,20 @@
         const appContent = document.getElementById('app-content');
         const loader = document.getElementById('loader');
 
-        // Monitora Estado do Login
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 // Logado
                 loginScreen.classList.add('hidden');
                 appContent.classList.remove('hidden');
-                startApp(); // Carrega os dados só quando logar
+                startApp();
             } else {
                 // Deslogado
                 loginScreen.classList.remove('hidden');
                 appContent.classList.add('hidden');
-                document.getElementById('loader').classList.add('hidden'); // Some o loader inicial
+                document.getElementById('loader').classList.add('hidden');
             }
         });
 
-        // Função de Login
         document.getElementById('form-login').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -321,26 +339,30 @@
 
             signInWithEmailAndPassword(auth, email, pass)
                 .then(() => {
-                    // Sucesso: onAuthStateChanged vai lidar com a UI
+                    // Auth observer will handle UI
                 })
                 .catch((error) => {
                     btn.innerHTML = 'Entrar no Sistema';
-                    errorMsg.textContent = "Email ou senha incorretos.";
+                    let msg = "Erro ao entrar.";
+                    if (error.code === 'auth/invalid-credential') msg = "Email ou senha incorretos.";
+                    if (error.code === 'auth/network-request-failed') msg = "Erro de conexão (Verifique se não está rodando localmente)";
+                    
+                    errorMsg.textContent = msg;
                     errorMsg.classList.remove('hidden');
                     console.error(error.code);
                 });
         });
 
-        // Função de Logout (Exposta globalmente)
+        // Função Logout Global
         window.logout = () => {
-            if(confirm("Deseja realmente sair?")) {
+            if(confirm("Deseja realmente sair do FrotaForte?")) {
                 signOut(auth).then(() => window.location.reload());
             }
         };
 
 
         // =========================================================================
-        // LÓGICA DO SISTEMA (SÓ INICIA APÓS LOGIN)
+        // LÓGICA DO SISTEMA
         // =========================================================================
         
         let localVehicles = [];
@@ -356,7 +378,6 @@
         ];
 
         function startApp() {
-            // Escuta Unidades
             onValue(ref(db, 'units'), (snapshot) => {
                 localUnits = [];
                 snapshot.forEach(child => localUnits.push({ id: child.key, ...child.val() }));
@@ -364,7 +385,6 @@
                 document.getElementById('loader').classList.add('hidden');
             });
 
-            // Escuta Veículos
             onValue(ref(db, 'vehicles'), (snapshot) => {
                 localVehicles = [];
                 snapshot.forEach(child => localVehicles.push({ id: child.key, ...child.val() }));
@@ -372,9 +392,7 @@
             });
         }
 
-        // =========================================================================
-        // FUNÇÕES DE UI E CRUD (MANTIDAS)
-        // =========================================================================
+        // Funções Globais UI
         window.switchPage = (page) => {
             document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -406,6 +424,7 @@
 
         window.closeModals = () => { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); };
 
+        // CRUD
         window.saveUnit = (e) => {
             e.preventDefault();
             const name = document.getElementById('u-name').value.trim();
@@ -627,7 +646,6 @@
             link.click();
         };
 
-        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             const formV = document.getElementById('form-vehicle');
             if(formV) formV.addEventListener('submit', window.saveVehicle);
