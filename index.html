@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FrotaForte Pro - Cloud</title>
+    <title>FrotaForte - Acesso Restrito</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,103 +21,140 @@
         .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
         .tab-btn { padding: 10px; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: 600; cursor: pointer; }
         .tab-btn.active { border-bottom-color: #2563eb; color: #2563eb; }
-        /* Loader Simples para carregamento inicial */
+        
+        /* Spinner Loader */
         #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; justify-content: center; items-center; transition: opacity 0.5s; }
+        
+        /* Área de Login */
+        #login-screen { position: fixed; inset: 0; background: #f1f5f9; z-index: 5000; display: flex; justify-content: center; items-center; }
     </style>
 </head>
-<body class="p-4 lg:p-8 text-slate-800">
+<body class="text-slate-800 h-screen overflow-hidden">
 
     <div id="loader"><div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div></div>
 
-    <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-3 rounded-xl text-white shadow-lg shadow-blue-200">
-                <i class="fas fa-cloud text-xl"></i>
+    <div id="login-screen">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 fade-in">
+            <div class="text-center mb-8">
+                <div class="inline-flex bg-blue-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-200 mb-4">
+                    <i class="fas fa-cloud text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">FrotaForte <span class="text-blue-600">Cloud</span></h1>
+                <p class="text-slate-400 text-sm mt-1">Acesso Restrito</p>
             </div>
-            <div>
-                <h1 class="text-xl font-bold tracking-tight text-slate-900">FrotaForte <span class="text-blue-600">Cloud</span></h1>
-                <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Sistema Online em Tempo Real</p>
+            
+            <form id="form-login" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Email</label>
+                    <input type="email" id="login-email" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white outline-none transition" placeholder="admin@empresa.com" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Senha</label>
+                    <input type="password" id="login-pass" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white outline-none transition" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95">
+                    Entrar no Sistema
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden font-bold"></p>
+        </div>
+    </div>
+
+    <div id="app-content" class="hidden h-full overflow-y-auto p-4 lg:p-8">
+        
+        <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-3 rounded-xl text-white shadow-lg shadow-blue-200">
+                    <i class="fas fa-cloud text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">FlotaGest <span class="text-blue-600">Cloud</span></h1>
+                    <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Gestão Online</p>
+                </div>
             </div>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="exportCSV()" class="bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-600">
-                <i class="fas fa-file-csv text-green-600"></i> Relatório
-            </button>
-        </div>
-    </header>
-
-    <nav class="max-w-7xl mx-auto flex gap-2 mb-8 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
-        <div onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-item active flex-1 text-center"><i class="fas fa-chart-line mr-2"></i>Dashboard</div>
-        <div onclick="switchPage('vehicles')" id="nav-vehicles" class="nav-item flex-1 text-center"><i class="fas fa-car mr-2"></i>Veículos</div>
-        <div onclick="switchPage('units')" id="nav-units" class="nav-item flex-1 text-center"><i class="fas fa-building mr-2"></i>Unidades</div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto min-h-[60vh]">
-        <section id="page-dashboard" class="page fade-in">
-            <div class="mb-8 flex justify-end">
-                <button onclick="openModal('vehicle')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 transition flex items-center gap-2 transform hover:scale-105 active:scale-95">
-                    <i class="fas fa-plus-circle text-lg"></i> ADICIONAR VEÍCULO
+            <div class="flex gap-2">
+                <button onclick="exportCSV()" class="bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-600">
+                    <i class="fas fa-file-csv text-green-600"></i> Relatório
+                </button>
+                <button onclick="logout()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-md">
+                    <i class="fas fa-sign-out-alt"></i> Sair
                 </button>
             </div>
+        </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div class="glass-card p-5 flex items-center justify-between border-l-4 border-slate-800">
-                    <div><p class="text-xs font-bold text-slate-400 uppercase">Total Veículos</p><h3 class="text-3xl font-black text-slate-800" id="dash-v-count">0</h3></div>
-                    <i class="fas fa-car text-slate-200 text-4xl"></i>
-                </div>
-                <div class="glass-card p-5 flex items-center justify-between border-l-4 border-amber-500">
-                    <div><p class="text-xs font-bold text-slate-400 uppercase">Alertas Ativos</p><h3 class="text-3xl font-black text-amber-600" id="dash-alerts">0</h3></div>
-                    <i class="fas fa-exclamation-triangle text-amber-100 text-4xl"></i>
-                </div>
-                <div class="glass-card p-5 flex items-center justify-between border-l-4 border-blue-500">
-                    <div><p class="text-xs font-bold text-slate-400 uppercase">Unidades</p><h3 class="text-3xl font-black text-blue-600" id="dash-u-count">0</h3></div>
-                    <i class="fas fa-building text-blue-100 text-4xl"></i>
-                </div>
-            </div>
+        <nav class="max-w-7xl mx-auto flex gap-2 mb-8 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+            <div onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-item active flex-1 text-center"><i class="fas fa-chart-line mr-2"></i>Dashboard</div>
+            <div onclick="switchPage('vehicles')" id="nav-vehicles" class="nav-item flex-1 text-center"><i class="fas fa-car mr-2"></i>Veículos</div>
+            <div onclick="switchPage('units')" id="nav-units" class="nav-item flex-1 text-center"><i class="fas fa-building mr-2"></i>Unidades</div>
+        </nav>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glass-card p-6">
-                    <h2 class="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><i class="fas fa-wrench text-amber-500"></i> Manutenções Próximas</h2>
-                    <div id="alerts-list" class="space-y-3 max-h-80 overflow-y-auto pr-2"></div>
+        <main class="max-w-7xl mx-auto min-h-[60vh]">
+            <section id="page-dashboard" class="page fade-in">
+                <div class="mb-8 flex justify-end">
+                    <button onclick="openModal('vehicle')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 transition flex items-center gap-2 transform hover:scale-105 active:scale-95">
+                        <i class="fas fa-plus-circle text-lg"></i> ADICIONAR VEÍCULO
+                    </button>
                 </div>
-                <div class="glass-card p-6">
-                    <h2 class="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-500"></i> Últimas Atualizações</h2>
-                    <div class="overflow-hidden rounded-lg border border-slate-100">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Veículo</th><th class="p-3">Data</th></tr></thead>
-                            <tbody id="dash-updates-list" class="divide-y divide-slate-100"></tbody>
-                        </table>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="glass-card p-5 flex items-center justify-between border-l-4 border-slate-800">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase">Total Veículos</p><h3 class="text-3xl font-black text-slate-800" id="dash-v-count">0</h3></div>
+                        <i class="fas fa-car text-slate-200 text-4xl"></i>
+                    </div>
+                    <div class="glass-card p-5 flex items-center justify-between border-l-4 border-amber-500">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase">Alertas Ativos</p><h3 class="text-3xl font-black text-amber-600" id="dash-alerts">0</h3></div>
+                        <i class="fas fa-exclamation-triangle text-amber-100 text-4xl"></i>
+                    </div>
+                    <div class="glass-card p-5 flex items-center justify-between border-l-4 border-blue-500">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase">Unidades</p><h3 class="text-3xl font-black text-blue-600" id="dash-u-count">0</h3></div>
+                        <i class="fas fa-building text-blue-100 text-4xl"></i>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <section id="page-vehicles" class="page hidden fade-in">
-            <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-slate-800">Frota Cadastrada</h2></div>
-            <div class="glass-card overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider">
-                        <tr>
-                            <th class="p-4 border-b">Veículo / Unidade</th>
-                            <th class="p-4 border-b">Placa Oficial</th>
-                            <th class="p-4 border-b">KM Atual</th>
-                            <th class="p-4 border-b">Situação</th>
-                            <th class="p-4 border-b text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-vehicles" class="divide-y divide-slate-100 text-sm"></tbody>
-                </table>
-            </div>
-        </section>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6">
+                        <h2 class="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><i class="fas fa-wrench text-amber-500"></i> Manutenções Próximas</h2>
+                        <div id="alerts-list" class="space-y-3 max-h-80 overflow-y-auto pr-2"></div>
+                    </div>
+                    <div class="glass-card p-6">
+                        <h2 class="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-500"></i> Últimas Atualizações</h2>
+                        <div class="overflow-hidden rounded-lg border border-slate-100">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Veículo</th><th class="p-3">Data</th></tr></thead>
+                                <tbody id="dash-updates-list" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <section id="page-units" class="page hidden fade-in">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-slate-800">Unidades</h2>
-                <button onclick="openModal('unit')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg transition text-sm flex items-center gap-2"><i class="fas fa-plus"></i> Nova Unidade</button>
-            </div>
-            <div id="list-units" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-        </section>
-    </main>
+            <section id="page-vehicles" class="page hidden fade-in">
+                <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-slate-800">Frota Cadastrada</h2></div>
+                <div class="glass-card overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="p-4 border-b">Veículo / Unidade</th>
+                                <th class="p-4 border-b">Placa Oficial</th>
+                                <th class="p-4 border-b">KM Atual</th>
+                                <th class="p-4 border-b">Situação</th>
+                                <th class="p-4 border-b text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-vehicles" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="page-units" class="page hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-800">Unidades</h2>
+                    <button onclick="openModal('unit')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg transition text-sm flex items-center gap-2"><i class="fas fa-plus"></i> Nova Unidade</button>
+                </div>
+                <div id="list-units" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </section>
+        </main>
+    </div>
 
     <div id="modal-vehicle" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-2xl">
@@ -228,42 +265,88 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // =========================================================================
         // >>> COLE SUAS CHAVES DO FIREBASE ABAIXO (DENTRO DAS ASPAS)
         // =========================================================================
         const firebaseConfig = {
+            apiKey: "SUA_API_KEY_AQUI",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+            projectId: "SEU_PROJETO_ID",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_ID",
+            appId: "SEU_APP_ID"
+        };
 
-            apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
-
-            authDomain: "frotar-io.firebaseapp.com",
-
-            databaseURL: "https://frotar-io-default-rtdb.firebaseio.com",
-
-            projectId: "frotar-io",
-
-            storageBucket: "frotar-io.firebasestorage.app",
-
-            messagingSenderId: "68520426030",
-
-            appId: "1:68520426030:web:91333e358781671648fdbf",
-
-            measurementId: "G-RK7EW2NYJM"
-
-            };
-
-
-        // Inicializa Firebase
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // Variáveis Globais de Dados (Mantidas em memória para performance)
+        // =========================================================================
+        // SISTEMA DE LOGIN (AUTH)
+        // =========================================================================
+        
+        const loginScreen = document.getElementById('login-screen');
+        const appContent = document.getElementById('app-content');
+        const loader = document.getElementById('loader');
+
+        // Monitora Estado do Login
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Logado
+                loginScreen.classList.add('hidden');
+                appContent.classList.remove('hidden');
+                startApp(); // Carrega os dados só quando logar
+            } else {
+                // Deslogado
+                loginScreen.classList.remove('hidden');
+                appContent.classList.add('hidden');
+                document.getElementById('loader').classList.add('hidden'); // Some o loader inicial
+            }
+        });
+
+        // Função de Login
+        document.getElementById('form-login').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const btn = document.getElementById('btn-login');
+            const errorMsg = document.getElementById('login-error');
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+            errorMsg.classList.add('hidden');
+
+            signInWithEmailAndPassword(auth, email, pass)
+                .then(() => {
+                    // Sucesso: onAuthStateChanged vai lidar com a UI
+                })
+                .catch((error) => {
+                    btn.innerHTML = 'Entrar no Sistema';
+                    errorMsg.textContent = "Email ou senha incorretos.";
+                    errorMsg.classList.remove('hidden');
+                    console.error(error.code);
+                });
+        });
+
+        // Função de Logout (Exposta globalmente)
+        window.logout = () => {
+            if(confirm("Deseja realmente sair?")) {
+                signOut(auth).then(() => window.location.reload());
+            }
+        };
+
+
+        // =========================================================================
+        // LÓGICA DO SISTEMA (SÓ INICIA APÓS LOGIN)
+        // =========================================================================
+        
         let localVehicles = [];
         let localUnits = [];
         let currentVehicleId = null;
 
-        // Regras de Negócio
         const REGRAS = [
             {id: 'rev', desc: 'Revisão Preventiva', km: 10000, type: 'fixed'},
             {id: 'oleo', desc: 'Troca de Óleo', km: 10000, type: 'relative'},
@@ -272,34 +355,25 @@
             {id: 'disc', desc: 'Disco de Freio', km: 40000, type: 'relative'}
         ];
 
-        // =========================================================================
-        // LISTENERS (O CORAÇÃO DO SISTEMA EM TEMPO REAL)
-        // =========================================================================
-        
-        // Escuta Unidades
-        const unitsRef = ref(db, 'units');
-        onValue(unitsRef, (snapshot) => {
-            localUnits = [];
-            snapshot.forEach(child => {
-                localUnits.push({ id: child.key, ...child.val() });
+        function startApp() {
+            // Escuta Unidades
+            onValue(ref(db, 'units'), (snapshot) => {
+                localUnits = [];
+                snapshot.forEach(child => localUnits.push({ id: child.key, ...child.val() }));
+                updateUI();
+                document.getElementById('loader').classList.add('hidden');
             });
-            updateUI(); // Atualiza a tela sempre que o banco mudar
-            document.getElementById('loader').style.opacity = '0';
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        });
 
-        // Escuta Veículos
-        const vehiclesRef = ref(db, 'vehicles');
-        onValue(vehiclesRef, (snapshot) => {
-            localVehicles = [];
-            snapshot.forEach(child => {
-                localVehicles.push({ id: child.key, ...child.val() });
+            // Escuta Veículos
+            onValue(ref(db, 'vehicles'), (snapshot) => {
+                localVehicles = [];
+                snapshot.forEach(child => localVehicles.push({ id: child.key, ...child.val() }));
+                updateUI();
             });
-            updateUI(); // Atualiza a tela sempre que o banco mudar
-        });
+        }
 
         // =========================================================================
-        // FUNÇÕES GLOBAIS (Expostas para o HTML usar)
+        // FUNÇÕES DE UI E CRUD (MANTIDAS)
         // =========================================================================
         window.switchPage = (page) => {
             document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -332,17 +406,11 @@
 
         window.closeModals = () => { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); };
 
-        // =========================================================================
-        // CRUD (CREATE, READ, UPDATE, DELETE) - Agora com FIREBASE
-        // =========================================================================
-
         window.saveUnit = (e) => {
             e.preventDefault();
             const name = document.getElementById('u-name').value.trim();
             if(!name) return;
-            push(ref(db, 'units'), { name: name })
-                .then(() => { closeModals(); document.getElementById('u-name').value = ''; })
-                .catch(err => alert("Erro ao salvar: " + err));
+            push(ref(db, 'units'), { name: name }).then(() => { closeModals(); document.getElementById('u-name').value = ''; });
         };
 
         window.saveVehicle = (e) => {
@@ -358,20 +426,12 @@
                 company: document.getElementById('v-company').value,
                 lastUpdate: Date.now()
             };
-
             if(!data.unit) { alert("Selecione uma Unidade."); return; }
             if(isNaN(data.km)) { alert("KM inválido."); return; }
 
             if (idStr) {
-                // UPDATE
-                update(ref(db, 'vehicles/' + idStr), data)
-                    .then(() => { 
-                        closeModals(); 
-                        if(currentVehicleId === idStr) loadVehicleDetails(idStr); 
-                    });
+                update(ref(db, 'vehicles/' + idStr), data).then(() => { closeModals(); if(currentVehicleId === idStr) loadVehicleDetails(idStr); });
             } else {
-                // CREATE
-                // Inicializa regras de manutenção
                 data.lastMaint = {};
                 REGRAS.forEach(r => { if(r.type === 'relative') data.lastMaint[r.id] = 0; });
                 push(ref(db, 'vehicles'), data).then(() => closeModals());
@@ -387,15 +447,8 @@
         };
 
         window.updateKm = (id, newKm) => {
-             update(ref(db, 'vehicles/' + id), {
-                 km: newKm,
-                 lastUpdate: Date.now()
-             });
+             update(ref(db, 'vehicles/' + id), { km: newKm, lastUpdate: Date.now() });
         };
-
-        // =========================================================================
-        // LÓGICA DE DETALHES E MANUTENÇÃO
-        // =========================================================================
 
         window.openVehicleDetails = (id) => {
             currentVehicleId = id;
@@ -407,7 +460,6 @@
         function loadVehicleDetails(id) {
             const v = localVehicles.find(item => item.id === id);
             if(!v) return;
-
             document.getElementById('det-brand').textContent = v.brand;
             document.getElementById('det-unit').textContent = v.unit;
             document.getElementById('det-plate-off').textContent = v.plateOff;
@@ -422,18 +474,14 @@
                 formConfig.innerHTML += `<div class="flex items-center gap-2"><label class="w-1/2 text-sm font-bold text-slate-600">${r.desc}</label><input type="number" id="cfg-${r.id}" value="${val}" class="w-1/2 p-2 border rounded text-sm bg-slate-50" placeholder="KM Última troca"></div>`;
             });
 
-            // Carrega Histórico (Sub-coleção)
             const hList = document.getElementById('det-history-list');
             hList.innerHTML = '<p class="text-center text-slate-400">Carregando...</p>';
-            
             const historyRef = ref(db, `history/${id}`);
             onValue(historyRef, (snapshot) => {
                 hList.innerHTML = '';
                 const history = [];
                 snapshot.forEach(c => history.push(c.val()));
-                
                 if(history.length === 0) { hList.innerHTML = '<div class="text-center p-4 bg-slate-50 rounded-lg text-slate-400 text-sm">Nenhum registro.</div>'; return; }
-                
                 history.sort((a,b) => b.date - a.date);
                 history.forEach(h => {
                     hList.innerHTML += `<div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-lg shadow-sm"><div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0"><i class="fas fa-check"></i></div><div class="flex-1"><p class="text-sm font-bold text-slate-800">${h.description}</p><p class="text-xs text-slate-400">Feito com ${h.km.toLocaleString()} km</p></div><div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">${new Date(h.date).toLocaleDateString('pt-BR')}</div></div>`;
@@ -476,19 +524,9 @@
 
             const v = localVehicles.find(i => i.id === currentVehicleId);
             const updates = {};
-            
-            // Atualiza KM da última manutenção no veículo
-            if(regra) {
-                updates[`vehicles/${currentVehicleId}/lastMaint/${typeId}`] = v.km;
-            }
-            
-            // Adiciona ao histórico
+            if(regra) updates[`vehicles/${currentVehicleId}/lastMaint/${typeId}`] = v.km;
             const newHistoryKey = push(ref(db, `history/${currentVehicleId}`)).key;
-            updates[`history/${currentVehicleId}/${newHistoryKey}`] = {
-                date: Date.now(),
-                km: v.km,
-                description: descFinal
-            };
+            updates[`history/${currentVehicleId}/${newHistoryKey}`] = { date: Date.now(), km: v.km, description: descFinal };
 
             update(ref(db), updates).then(() => {
                 document.getElementById('modal-maint-register').classList.add('hidden');
@@ -505,18 +543,10 @@
                     updates[`vehicles/${currentVehicleId}/lastMaint/${r.id}`] = val ? parseInt(val) : 0;
                 }
             });
-            update(ref(db), updates).then(() => {
-                alert("Configuração salva!");
-                closeModals();
-            });
+            update(ref(db), updates).then(() => { alert("Configuração salva!"); closeModals(); });
         };
 
-        // =========================================================================
-        // ATUALIZAÇÃO VISUAL (RENDER)
-        // =========================================================================
-
         function updateUI() {
-            // Unidades
             document.getElementById('dash-u-count').textContent = localUnits.length;
             const listEl = document.getElementById('list-units');
             const selectEl = document.getElementById('v-unit');
@@ -529,7 +559,6 @@
             });
             if(currentVal) selectEl.value = currentVal;
 
-            // Veículos e Dashboard
             const tbody = document.getElementById('table-vehicles');
             tbody.innerHTML = '';
             const alertBox = document.getElementById('alerts-list');
@@ -542,25 +571,9 @@
             sortedVehicles.forEach(v => {
                 const date = new Date(v.lastUpdate).toLocaleDateString('pt-BR');
                 const ownBadge = v.ownership === 'Locada' ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">LOCADO</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2">PRÓPRIO</span>`;
-                
-                // Tabela Principal
-                tbody.innerHTML += `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-50">
-                    <td class="p-4"><div class="font-bold text-slate-800 flex items-center">${v.brand} ${ownBadge}</div><div class="text-xs text-slate-400 font-bold uppercase tracking-wider">${v.unit}</div></td>
-                    <td class="p-4 font-mono font-bold text-slate-600">${v.plateOff}</td>
-                    <td class="p-4 text-slate-600 font-semibold">${v.km.toLocaleString()} km</td>
-                    <td class="p-4"><span class="badge-date">${date}</span></td>
-                    <td class="p-4 text-center flex justify-center gap-2">
-                        <button onclick="openVehicleDetails('${v.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold transition tooltip-container"><i class="fas fa-folder-open"></i><span class="tooltip-text">Ver Detalhes</span></button>
-                        <button onclick="openUpdateKmModal('${v.id}', ${v.km})" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition tooltip-container"><i class="fas fa-tachometer-alt"></i><span class="tooltip-text">Atualizar KM</span></button>
-                        <button onclick="deleteItem('v', '${v.id}')" class="text-slate-300 hover:text-red-400 px-2 tooltip-container"><i class="fas fa-trash"></i><span class="tooltip-text">Excluir Veículo</span></button>
-                    </td>
-                </tr>`;
-
-                // Dashboard Updates
+                tbody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-50"><td class="p-4"><div class="font-bold text-slate-800 flex items-center">${v.brand} ${ownBadge}</div><div class="text-xs text-slate-400 font-bold uppercase tracking-wider">${v.unit}</div></td><td class="p-4 font-mono font-bold text-slate-600">${v.plateOff}</td><td class="p-4 text-slate-600 font-semibold">${v.km.toLocaleString()} km</td><td class="p-4"><span class="badge-date">${date}</span></td><td class="p-4 text-center flex justify-center gap-2"><button onclick="openVehicleDetails('${v.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold transition tooltip-container"><i class="fas fa-folder-open"></i><span class="tooltip-text">Ver Detalhes</span></button><button onclick="openUpdateKmModal('${v.id}', ${v.km})" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition tooltip-container"><i class="fas fa-tachometer-alt"></i><span class="tooltip-text">Atualizar KM</span></button><button onclick="deleteItem('v', '${v.id}')" class="text-slate-300 hover:text-red-400 px-2 tooltip-container"><i class="fas fa-trash"></i><span class="tooltip-text">Excluir Veículo</span></button></td></tr>`;
                 updatesBox.innerHTML += `<tr><td class="p-3 font-medium text-slate-700 border-b border-slate-50">${v.brand} <span class="text-xs text-slate-400">(${v.plateOff})</span></td><td class="p-3 border-b border-slate-50"><span class="text-xs font-bold text-slate-500">${date}</span></td></tr>`;
-
-                // Dashboard Alertas
+                
                 const isNewCar = v.km < 10000;
                 REGRAS.forEach(r => {
                     let nextKm = 0, check = true;
@@ -584,15 +597,10 @@
                     }
                 });
             });
-
             document.getElementById('dash-v-count').textContent = localVehicles.length;
             document.getElementById('dash-alerts').textContent = alertsCount;
             if(!alertBox.innerHTML) alertBox.innerHTML = '<p class="text-slate-400 italic text-sm text-center py-4">Nenhuma manutenção pendente.</p>';
         }
-
-        // =========================================================================
-        // UTILS (KM MODAL & CSV)
-        // =========================================================================
 
         window.openUpdateKmModal = (id, currentKm) => {
             document.getElementById('update-id').value = id;
@@ -619,7 +627,7 @@
             link.click();
         };
 
-        // Event Listeners Iniciais
+        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             const formV = document.getElementById('form-vehicle');
             if(formV) formV.addEventListener('submit', window.saveVehicle);
