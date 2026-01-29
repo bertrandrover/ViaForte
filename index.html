@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frotar.io Pro - Cloud</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-card { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .nav-item { cursor: pointer; padding: 12px; border-radius: 0.8rem; transition: 0.3s; color: #64748b; font-weight: 600; font-size: 0.9rem; }
+        .nav-item.active { background: #0f172a; color: white; }
+        .badge-date { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; display: inline-block; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tooltip-container { position: relative; }
+        .tooltip-text { visibility: hidden; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background-color: #1e293b; color: #fff; text-align: center; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; opacity: 0; transition: opacity 0.3s; z-index: 10; pointer-events: none; }
+        .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+        .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .tab-btn { padding: 10px; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: 600; cursor: pointer; }
+        .tab-btn.active { border-bottom-color: #2563eb; color: #2563eb; }
+        /* Loader Simples para carregamento inicial */
+        #loader { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; justify-content: center; items-center; transition: opacity 0.5s; }
+    </style>
+</head>
+<body class="p-4 lg:p-8 text-slate-800">
+
+    <div id="loader"><div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div></div>
+
+    <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-3 rounded-xl text-white shadow-lg shadow-blue-200">
+                <i class="fas fa-cloud text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">Frotar.io <span class="text-blue-600">Cloud</span></h1>
+                <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Sistema Online em Tempo Real</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="exportCSV()" class="bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-600">
+                <i class="fas fa-file-csv text-green-600"></i> Relatório
+            </button>
+        </div>
+    </header>
+
+    <nav class="max-w-7xl mx-auto flex gap-2 mb-8 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+        <div onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-item active flex-1 text-center"><i class="fas fa-chart-line mr-2"></i>Dashboard</div>
+        <div onclick="switchPage('vehicles')" id="nav-vehicles" class="nav-item flex-1 text-center"><i class="fas fa-car mr-2"></i>Veículos</div>
+        <div onclick="switchPage('units')" id="nav-units" class="nav-item flex-1 text-center"><i class="fas fa-building mr-2"></i>Unidades</div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto min-h-[60vh]">
+        <section id="page-dashboard" class="page fade-in">
+            <div class="mb-8 flex justify-end">
+                <button onclick="openModal('vehicle')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 transition flex items-center gap-2 transform hover:scale-105 active:scale-95">
+                    <i class="fas fa-plus-circle text-lg"></i> ADICIONAR VEÍCULO
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="glass-card p-5 flex items-center justify-between border-l-4 border-slate-800">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase">Total Veículos</p><h3 class="text-3xl font-black text-slate-800" id="dash-v-count">0</h3></div>
+                    <i class="fas fa-car text-slate-200 text-4xl"></i>
+                </div>
+                <div class="glass-card p-5 flex items-center justify-between border-l-4 border-amber-500">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase">Alertas Ativos</p><h3 class="text-3xl font-black text-amber-600" id="dash-alerts">0</h3></div>
+                    <i class="fas fa-exclamation-triangle text-amber-100 text-4xl"></i>
+                </div>
+                <div class="glass-card p-5 flex items-center justify-between border-l-4 border-blue-500">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase">Unidades</p><h3 class="text-3xl font-black text-blue-600" id="dash-u-count">0</h3></div>
+                    <i class="fas fa-building text-blue-100 text-4xl"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card p-6">
+                    <h2 class="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><i class="fas fa-wrench text-amber-500"></i> Manutenções Próximas</h2>
+                    <div id="alerts-list" class="space-y-3 max-h-80 overflow-y-auto pr-2"></div>
+                </div>
+                <div class="glass-card p-6">
+                    <h2 class="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-500"></i> Últimas Atualizações</h2>
+                    <div class="overflow-hidden rounded-lg border border-slate-100">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Veículo</th><th class="p-3">Data</th></tr></thead>
+                            <tbody id="dash-updates-list" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-vehicles" class="page hidden fade-in">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-slate-800">Frota Cadastrada</h2></div>
+            <div class="glass-card overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider">
+                        <tr>
+                            <th class="p-4 border-b">Veículo / Unidade</th>
+                            <th class="p-4 border-b">Placa Oficial</th>
+                            <th class="p-4 border-b">KM Atual</th>
+                            <th class="p-4 border-b">Situação</th>
+                            <th class="p-4 border-b text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-vehicles" class="divide-y divide-slate-100 text-sm"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="page-units" class="page hidden fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-800">Unidades</h2>
+                <button onclick="openModal('unit')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg transition text-sm flex items-center gap-2"><i class="fas fa-plus"></i> Nova Unidade</button>
+            </div>
+            <div id="list-units" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+    </main>
+
+    <div id="modal-vehicle" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 text-slate-800 border-b pb-2" id="modal-title-vehicle">Adicionar Veículo</h3>
+            <form id="form-vehicle" class="space-y-4">
+                <input type="hidden" id="v-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 uppercase">Marca e Modelo</label><input type="text" id="v-brand-model" placeholder="Ex: Fiat Toro" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none" required></div>
+                    <div><label class="text-xs font-bold text-slate-500 uppercase">Unidade</label><select id="v-unit" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none cursor-pointer"><option value="">Selecione...</option></select></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div><label class="text-xs font-bold text-slate-500 uppercase">Tipo de Frota</label><select id="v-ownership" class="w-full p-3 bg-white border border-slate-200 rounded-lg outline-none cursor-pointer"><option value="Propria">Frota Própria</option><option value="Locada">Locado</option></select></div>
+                    <div><label class="text-xs font-bold text-slate-500 uppercase">Empresa / Órgão Responsável</label><input type="text" id="v-company" placeholder="Ex: Localiza ou Dep. Logística" class="w-full p-3 bg-white border border-slate-200 rounded-lg outline-none"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 uppercase">Placa Oficial</label><input type="text" id="v-plate-off" placeholder="ABC-1234" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none uppercase font-mono" required></div>
+                    <div><label class="text-xs font-bold text-slate-500 uppercase">Placa Reservada</label><input type="text" id="v-plate-res" placeholder="Opcional" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none uppercase font-mono"></div>
+                </div>
+                <div><label class="text-xs font-bold text-slate-500 uppercase">KM Atual</label><input type="number" id="v-km" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none" required></div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeModals()" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-details" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl rounded-2xl p-0 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 bg-slate-800 text-white rounded-t-2xl flex justify-between items-center">
+                <div><h2 class="text-xl font-bold" id="det-brand">Veículo</h2><p class="text-slate-400 text-sm" id="det-unit">Unidade</p></div>
+                <div class="flex gap-3">
+                    <button onclick="editVehicleFromDetails()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition flex items-center gap-2 border border-slate-600"><i class="fas fa-pen"></i> Editar</button>
+                    <button onclick="closeModals()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                </div>
+            </div>
+            <div class="flex border-b border-slate-100 px-6 pt-2 bg-white">
+                <button onclick="switchTab('history')" id="tab-history" class="tab-btn active mr-4">Histórico</button>
+                <button onclick="switchTab('config')" id="tab-config" class="tab-btn">Oficina / Configuração</button>
+            </div>
+            <div class="p-6 overflow-y-auto bg-slate-50/50 flex-1">
+                <div class="mb-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div class="grid grid-cols-2 gap-4 mb-4 border-b border-slate-100 pb-4">
+                        <div><p class="text-[10px] font-bold text-slate-400 uppercase">Situação</p><p class="font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-file-contract text-blue-500"></i> <span id="det-ownership">-</span></p></div>
+                        <div><p class="text-[10px] font-bold text-slate-400 uppercase">Responsável</p><p class="font-bold text-slate-800" id="det-company">-</p></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><p class="text-[10px] font-bold text-slate-400 uppercase">Placa Oficial</p><p class="text-lg font-mono font-bold text-slate-700" id="det-plate-off">-</p></div>
+                        <div><p class="text-[10px] font-bold text-slate-400 uppercase">KM Atual</p><p class="text-lg font-bold text-blue-600" id="det-km">-</p></div>
+                        <div><button onclick="openMaintRegister()" class="w-full h-full bg-slate-800 text-white rounded-lg text-xs font-bold shadow hover:bg-slate-900 transition flex flex-col items-center justify-center p-1"><i class="fas fa-plus-circle mb-1"></i> Registrar<br>Manutenção</button></div>
+                    </div>
+                </div>
+                <div id="content-history"><div id="det-history-list" class="space-y-2"></div></div>
+                <div id="content-config" class="hidden">
+                    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-r-lg"><p class="text-sm text-amber-800"><b>Atenção:</b> Informe o KM da <b>ÚLTIMA</b> troca. O sistema calculará a próxima.</p></div>
+                    <form id="form-config" class="space-y-3 bg-white p-4 rounded-xl border border-slate-200"></form>
+                    <button onclick="saveMaintConfig()" class="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg">Salvar e Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-update-km" class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl transform transition-all scale-100">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-tachometer-alt text-2xl text-blue-600"></i></div>
+                <h3 class="text-xl font-bold text-slate-800">Atualizar Quilometragem</h3>
+                <p class="text-sm text-slate-500">Informe o valor atual do hodômetro.</p>
+            </div>
+            <input type="hidden" id="update-id">
+            <div class="mb-6">
+                <label class="text-xs font-bold text-slate-500 uppercase block mb-2 text-center">KM Atual Registrado: <span id="update-current" class="text-slate-800"></span></label>
+                <input type="number" id="update-new-km" class="w-full p-4 text-center text-2xl font-bold tracking-widest bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white outline-none transition" placeholder="000000">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeModals()" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl">Cancelar</button>
+                <button onclick="confirmUpdateKm()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-maint-register" class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4">Nova Manutenção</h3>
+            <div class="space-y-4">
+                <div><label class="text-xs font-bold text-slate-500 uppercase">Tipo de Serviço</label><select id="reg-type" class="w-full p-3 bg-slate-50 border rounded-lg"></select></div>
+                <div><label class="text-xs font-bold text-slate-500 uppercase">Descrição/Obs</label><input type="text" id="reg-desc" placeholder="Ex: Óleo 5W30 Sintético" class="w-full p-3 bg-slate-50 border rounded-lg"></div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('modal-maint-register').classList.add('hidden')" class="flex-1 py-2 text-slate-500">Cancelar</button>
+                    <button onclick="confirmMaintRegister()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-unit" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 text-slate-800">Nova Unidade</h3>
+            <form onsubmit="saveUnit(event)" class="space-y-4">
+                <input type="text" id="u-name" placeholder="Nome da Unidade" class="w-full p-3 bg-slate-50 border rounded-lg outline-none" required>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeModals()" class="flex-1 py-2 text-slate-500">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // =========================================================================
+        // >>> COLE SUAS CHAVES DO FIREBASE ABAIXO (DENTRO DAS ASPAS)
+        // =========================================================================
+        const firebaseConfig = {
+
+            apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
+
+            authDomain: "frotar-io.firebaseapp.com",
+
+            databaseURL: "https://frotar-io-default-rtdb.firebaseio.com",
+
+            projectId: "frotar-io",
+
+            storageBucket: "frotar-io.firebasestorage.app",
+
+            messagingSenderId: "68520426030",
+
+            appId: "1:68520426030:web:91333e358781671648fdbf",
+
+            measurementId: "G-RK7EW2NYJM"
+
+            };
+
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Variáveis Globais de Dados (Mantidas em memória para performance)
+        let localVehicles = [];
+        let localUnits = [];
+        let currentVehicleId = null;
+
+        // Regras de Negócio
+        const REGRAS = [
+            {id: 'rev', desc: 'Revisão Preventiva', km: 10000, type: 'fixed'},
+            {id: 'oleo', desc: 'Troca de Óleo', km: 10000, type: 'relative'},
+            {id: 'past', desc: 'Pastilhas de Freio', km: 20000, type: 'relative'},
+            {id: 'corr', desc: 'Correia/Corrente', km: 35000, type: 'relative'},
+            {id: 'disc', desc: 'Disco de Freio', km: 40000, type: 'relative'}
+        ];
+
+        // =========================================================================
+        // LISTENERS (O CORAÇÃO DO SISTEMA EM TEMPO REAL)
+        // =========================================================================
+        
+        // Escuta Unidades
+        const unitsRef = ref(db, 'units');
+        onValue(unitsRef, (snapshot) => {
+            localUnits = [];
+            snapshot.forEach(child => {
+                localUnits.push({ id: child.key, ...child.val() });
+            });
+            updateUI(); // Atualiza a tela sempre que o banco mudar
+            document.getElementById('loader').style.opacity = '0';
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+        });
+
+        // Escuta Veículos
+        const vehiclesRef = ref(db, 'vehicles');
+        onValue(vehiclesRef, (snapshot) => {
+            localVehicles = [];
+            snapshot.forEach(child => {
+                localVehicles.push({ id: child.key, ...child.val() });
+            });
+            updateUI(); // Atualiza a tela sempre que o banco mudar
+        });
+
+        // =========================================================================
+        // FUNÇÕES GLOBAIS (Expostas para o HTML usar)
+        // =========================================================================
+        window.switchPage = (page) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + page).classList.remove('hidden');
+            document.getElementById('nav-' + page).classList.add('active');
+        };
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('content-history').classList.add('hidden');
+            document.getElementById('content-config').classList.add('hidden');
+            document.getElementById('content-' + tab).classList.remove('hidden');
+        };
+
+        window.openModal = (t) => {
+            if(t === 'vehicle' && localUnits.length === 0) { alert("Cadastre uma Unidade primeiro."); return; }
+            if(t === 'vehicle') {
+                document.getElementById('v-id').value = ''; 
+                document.getElementById('modal-title-vehicle').textContent = 'Adicionar Veículo';
+                document.getElementById('v-brand-model').value = '';
+                document.getElementById('v-plate-off').value = '';
+                document.getElementById('v-plate-res').value = '';
+                document.getElementById('v-km').value = '';
+                document.getElementById('v-company').value = '';
+            }
+            document.getElementById('modal-' + t).classList.remove('hidden');
+        };
+
+        window.closeModals = () => { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); };
+
+        // =========================================================================
+        // CRUD (CREATE, READ, UPDATE, DELETE) - Agora com FIREBASE
+        // =========================================================================
+
+        window.saveUnit = (e) => {
+            e.preventDefault();
+            const name = document.getElementById('u-name').value.trim();
+            if(!name) return;
+            push(ref(db, 'units'), { name: name })
+                .then(() => { closeModals(); document.getElementById('u-name').value = ''; })
+                .catch(err => alert("Erro ao salvar: " + err));
+        };
+
+        window.saveVehicle = (e) => {
+            e.preventDefault();
+            const idStr = document.getElementById('v-id').value;
+            const data = {
+                brand: document.getElementById('v-brand-model').value,
+                plateOff: document.getElementById('v-plate-off').value.toUpperCase(),
+                plateRes: document.getElementById('v-plate-res').value.toUpperCase(),
+                km: parseInt(document.getElementById('v-km').value),
+                unit: document.getElementById('v-unit').value,
+                ownership: document.getElementById('v-ownership').value,
+                company: document.getElementById('v-company').value,
+                lastUpdate: Date.now()
+            };
+
+            if(!data.unit) { alert("Selecione uma Unidade."); return; }
+            if(isNaN(data.km)) { alert("KM inválido."); return; }
+
+            if (idStr) {
+                // UPDATE
+                update(ref(db, 'vehicles/' + idStr), data)
+                    .then(() => { 
+                        closeModals(); 
+                        if(currentVehicleId === idStr) loadVehicleDetails(idStr); 
+                    });
+            } else {
+                // CREATE
+                // Inicializa regras de manutenção
+                data.lastMaint = {};
+                REGRAS.forEach(r => { if(r.type === 'relative') data.lastMaint[r.id] = 0; });
+                push(ref(db, 'vehicles'), data).then(() => closeModals());
+            }
+        };
+
+        window.deleteItem = (type, id) => {
+            if(confirm("Excluir permanentemente?")) {
+                const node = type === 'v' ? 'vehicles' : 'units';
+                remove(ref(db, `${node}/${id}`));
+                if(type === 'v') document.getElementById('modal-details').classList.add('hidden');
+            }
+        };
+
+        window.updateKm = (id, newKm) => {
+             update(ref(db, 'vehicles/' + id), {
+                 km: newKm,
+                 lastUpdate: Date.now()
+             });
+        };
+
+        // =========================================================================
+        // LÓGICA DE DETALHES E MANUTENÇÃO
+        // =========================================================================
+
+        window.openVehicleDetails = (id) => {
+            currentVehicleId = id;
+            loadVehicleDetails(id);
+            document.getElementById('modal-details').classList.remove('hidden');
+            switchTab('history');
+        };
+
+        function loadVehicleDetails(id) {
+            const v = localVehicles.find(item => item.id === id);
+            if(!v) return;
+
+            document.getElementById('det-brand').textContent = v.brand;
+            document.getElementById('det-unit').textContent = v.unit;
+            document.getElementById('det-plate-off').textContent = v.plateOff;
+            document.getElementById('det-km').textContent = v.km.toLocaleString() + ' km';
+            document.getElementById('det-ownership').textContent = v.ownership || 'Propria';
+            document.getElementById('det-company').textContent = v.company || '---';
+
+            const formConfig = document.getElementById('form-config');
+            formConfig.innerHTML = '';
+            REGRAS.forEach(r => {
+                const val = (v.lastMaint && v.lastMaint[r.id]) ? v.lastMaint[r.id] : 0;
+                formConfig.innerHTML += `<div class="flex items-center gap-2"><label class="w-1/2 text-sm font-bold text-slate-600">${r.desc}</label><input type="number" id="cfg-${r.id}" value="${val}" class="w-1/2 p-2 border rounded text-sm bg-slate-50" placeholder="KM Última troca"></div>`;
+            });
+
+            // Carrega Histórico (Sub-coleção)
+            const hList = document.getElementById('det-history-list');
+            hList.innerHTML = '<p class="text-center text-slate-400">Carregando...</p>';
+            
+            const historyRef = ref(db, `history/${id}`);
+            onValue(historyRef, (snapshot) => {
+                hList.innerHTML = '';
+                const history = [];
+                snapshot.forEach(c => history.push(c.val()));
+                
+                if(history.length === 0) { hList.innerHTML = '<div class="text-center p-4 bg-slate-50 rounded-lg text-slate-400 text-sm">Nenhum registro.</div>'; return; }
+                
+                history.sort((a,b) => b.date - a.date);
+                history.forEach(h => {
+                    hList.innerHTML += `<div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-lg shadow-sm"><div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0"><i class="fas fa-check"></i></div><div class="flex-1"><p class="text-sm font-bold text-slate-800">${h.description}</p><p class="text-xs text-slate-400">Feito com ${h.km.toLocaleString()} km</p></div><div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">${new Date(h.date).toLocaleDateString('pt-BR')}</div></div>`;
+                });
+            }, {onlyOnce: true});
+        }
+
+        window.editVehicleFromDetails = () => {
+            closeModals();
+            const v = localVehicles.find(i => i.id === currentVehicleId);
+            if(!v) return;
+            document.getElementById('v-id').value = v.id;
+            document.getElementById('v-brand-model').value = v.brand;
+            document.getElementById('v-plate-off').value = v.plateOff;
+            document.getElementById('v-plate-res').value = v.plateRes;
+            document.getElementById('v-km').value = v.km;
+            document.getElementById('v-unit').value = v.unit;
+            document.getElementById('v-ownership').value = v.ownership || 'Propria';
+            document.getElementById('v-company').value = v.company || '';
+            document.getElementById('modal-title-vehicle').textContent = 'Editar Veículo';
+            document.getElementById('modal-vehicle').classList.remove('hidden');
+        };
+
+        window.openMaintRegister = () => {
+            const sel = document.getElementById('reg-type');
+            sel.innerHTML = '';
+            REGRAS.forEach(r => sel.innerHTML += `<option value="${r.id}">${r.desc}</option>`);
+            sel.innerHTML += `<option value="other">Outros</option>`;
+            document.getElementById('reg-desc').value = '';
+            document.getElementById('modal-maint-register').classList.remove('hidden');
+        };
+
+        window.confirmMaintRegister = () => {
+            const typeId = document.getElementById('reg-type').value;
+            const descInput = document.getElementById('reg-desc').value;
+            let descFinal = descInput;
+            const regra = REGRAS.find(r => r.id === typeId);
+            if(regra) descFinal = regra.desc + (descInput ? ` (${descInput})` : '');
+            else if(!descFinal) { alert("Digite uma descrição."); return; }
+
+            const v = localVehicles.find(i => i.id === currentVehicleId);
+            const updates = {};
+            
+            // Atualiza KM da última manutenção no veículo
+            if(regra) {
+                updates[`vehicles/${currentVehicleId}/lastMaint/${typeId}`] = v.km;
+            }
+            
+            // Adiciona ao histórico
+            const newHistoryKey = push(ref(db, `history/${currentVehicleId}`)).key;
+            updates[`history/${currentVehicleId}/${newHistoryKey}`] = {
+                date: Date.now(),
+                km: v.km,
+                description: descFinal
+            };
+
+            update(ref(db), updates).then(() => {
+                document.getElementById('modal-maint-register').classList.add('hidden');
+                alert("Manutenção registrada!");
+                loadVehicleDetails(currentVehicleId);
+            });
+        };
+
+        window.saveMaintConfig = () => {
+            const updates = {};
+            REGRAS.forEach(r => {
+                if(r.type === 'relative') {
+                    const val = document.getElementById('cfg-' + r.id).value;
+                    updates[`vehicles/${currentVehicleId}/lastMaint/${r.id}`] = val ? parseInt(val) : 0;
+                }
+            });
+            update(ref(db), updates).then(() => {
+                alert("Configuração salva!");
+                closeModals();
+            });
+        };
+
+        // =========================================================================
+        // ATUALIZAÇÃO VISUAL (RENDER)
+        // =========================================================================
+
+        function updateUI() {
+            // Unidades
+            document.getElementById('dash-u-count').textContent = localUnits.length;
+            const listEl = document.getElementById('list-units');
+            const selectEl = document.getElementById('v-unit');
+            listEl.innerHTML = '';
+            const currentVal = selectEl.value;
+            selectEl.innerHTML = '<option value="">Selecione uma Unidade...</option>';
+            localUnits.forEach(u => {
+                listEl.innerHTML += `<div class="glass-card p-4 flex justify-between items-center border border-slate-100"><span class="font-bold text-slate-700"><i class="fas fa-building text-slate-300 mr-2"></i>${u.name}</span><button onclick="deleteItem('u', '${u.id}')" class="text-slate-300 hover:text-red-500 tooltip-container"><i class="fas fa-trash"></i><span class="tooltip-text">Excluir Unidade</span></button></div>`;
+                selectEl.innerHTML += `<option value="${u.name}">${u.name}</option>`;
+            });
+            if(currentVal) selectEl.value = currentVal;
+
+            // Veículos e Dashboard
+            const tbody = document.getElementById('table-vehicles');
+            tbody.innerHTML = '';
+            const alertBox = document.getElementById('alerts-list');
+            const updatesBox = document.getElementById('dash-updates-list');
+            alertBox.innerHTML = ''; updatesBox.innerHTML = '';
+            let alertsCount = 0;
+
+            const sortedVehicles = [...localVehicles].sort((a, b) => b.lastUpdate - a.lastUpdate);
+
+            sortedVehicles.forEach(v => {
+                const date = new Date(v.lastUpdate).toLocaleDateString('pt-BR');
+                const ownBadge = v.ownership === 'Locada' ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">LOCADO</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2">PRÓPRIO</span>`;
+                
+                // Tabela Principal
+                tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-50">
+                    <td class="p-4"><div class="font-bold text-slate-800 flex items-center">${v.brand} ${ownBadge}</div><div class="text-xs text-slate-400 font-bold uppercase tracking-wider">${v.unit}</div></td>
+                    <td class="p-4 font-mono font-bold text-slate-600">${v.plateOff}</td>
+                    <td class="p-4 text-slate-600 font-semibold">${v.km.toLocaleString()} km</td>
+                    <td class="p-4"><span class="badge-date">${date}</span></td>
+                    <td class="p-4 text-center flex justify-center gap-2">
+                        <button onclick="openVehicleDetails('${v.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold transition tooltip-container"><i class="fas fa-folder-open"></i><span class="tooltip-text">Ver Detalhes</span></button>
+                        <button onclick="openUpdateKmModal('${v.id}', ${v.km})" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition tooltip-container"><i class="fas fa-tachometer-alt"></i><span class="tooltip-text">Atualizar KM</span></button>
+                        <button onclick="deleteItem('v', '${v.id}')" class="text-slate-300 hover:text-red-400 px-2 tooltip-container"><i class="fas fa-trash"></i><span class="tooltip-text">Excluir Veículo</span></button>
+                    </td>
+                </tr>`;
+
+                // Dashboard Updates
+                updatesBox.innerHTML += `<tr><td class="p-3 font-medium text-slate-700 border-b border-slate-50">${v.brand} <span class="text-xs text-slate-400">(${v.plateOff})</span></td><td class="p-3 border-b border-slate-50"><span class="text-xs font-bold text-slate-500">${date}</span></td></tr>`;
+
+                // Dashboard Alertas
+                const isNewCar = v.km < 10000;
+                REGRAS.forEach(r => {
+                    let nextKm = 0, check = true;
+                    if(r.type === 'fixed') nextKm = Math.ceil((v.km + 1) / r.km) * r.km;
+                    else {
+                        if(isNewCar && (!v.lastMaint || !v.lastMaint[r.id])) check = false;
+                        else { const last = (v.lastMaint && v.lastMaint[r.id]) ? v.lastMaint[r.id] : 0; nextKm = last + r.km; }
+                    }
+                    if(check) {
+                        const lastServiceKm = (v.lastMaint && v.lastMaint[r.id]) ? v.lastMaint[r.id] : -99999;
+                        if (Math.abs(v.km - lastServiceKm) < 1000) check = false; 
+                    }
+                    if(check) {
+                        const falta = nextKm - v.km;
+                        if(falta <= 1000) {
+                            alertsCount++;
+                            const color = falta < 0 ? 'bg-red-50 border-red-500 text-red-700' : 'bg-amber-50 border-amber-500 text-amber-700';
+                            const msg = falta < 0 ? `Vencida há ${Math.abs(falta)}km` : `Faltam ${falta}km`;
+                            alertBox.innerHTML += `<div class="p-3 rounded-lg border-l-4 ${color} flex justify-between items-center mb-2"><div><div class="text-sm font-bold text-slate-700">${v.brand} <span class="text-xs font-normal">(${v.plateOff})</span></div><div class="text-xs font-bold">${r.desc}: ${msg}</div></div><i class="fas fa-tools opacity-50"></i></div>`;
+                        }
+                    }
+                });
+            });
+
+            document.getElementById('dash-v-count').textContent = localVehicles.length;
+            document.getElementById('dash-alerts').textContent = alertsCount;
+            if(!alertBox.innerHTML) alertBox.innerHTML = '<p class="text-slate-400 italic text-sm text-center py-4">Nenhuma manutenção pendente.</p>';
+        }
+
+        // =========================================================================
+        // UTILS (KM MODAL & CSV)
+        // =========================================================================
+
+        window.openUpdateKmModal = (id, currentKm) => {
+            document.getElementById('update-id').value = id;
+            document.getElementById('update-current').textContent = currentKm.toLocaleString() + " km";
+            document.getElementById('update-new-km').value = '';
+            document.getElementById('modal-update-km').classList.remove('hidden');
+            setTimeout(() => document.getElementById('update-new-km').focus(), 100);
+        };
+
+        window.confirmUpdateKm = () => {
+            const id = document.getElementById('update-id').value;
+            const n = parseInt(document.getElementById('update-new-km').value);
+            if(isNaN(n) || n <= 0) { alert("Insira um valor válido."); return; }
+            updateKm(id, n);
+            closeModals();
+        };
+
+        window.exportCSV = () => {
+            let csv = "data:text/csv;charset=utf-8,MARCA,PLACA,KM,UNIDADE,SITUACAO,RESPONSAVEL\n";
+            localVehicles.forEach(v => { csv += `"${v.brand}","${v.plateOff}","${v.km}","${v.unit}","${v.ownership||'Propria'}","${v.company||''}"\n`; });
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csv));
+            link.setAttribute("download", "relatorio_frota.csv");
+            link.click();
+        };
+
+        // Event Listeners Iniciais
+        document.addEventListener('DOMContentLoaded', () => {
+            const formV = document.getElementById('form-vehicle');
+            if(formV) formV.addEventListener('submit', window.saveVehicle);
+            const formU = document.querySelector('#modal-unit form');
+            if(formU) formU.addEventListener('submit', window.saveUnit);
+        });
+
+    </script>
+</body>
+</html>
