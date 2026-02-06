@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrotaForte - Gestão Profissional de Frotas</title>
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Nossos Estilos -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-800">
+
+    <!-- Container de Notificações -->
+    <div id="toast-container"></div>
+
+    <!-- ==================== TELA DE LOGIN ==================== -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-100 z-[5000] flex justify-center items-center">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 fade-in">
+            <div class="text-center mb-8">
+                <div class="inline-flex bg-blue-600 p-4 rounded-2xl text-white shadow-lg mb-4">
+                    <i class="fas fa-truck-moving text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">FrotaForte <span class="text-blue-600">Gestão</span></h1>
+                <p class="text-slate-400 text-sm mt-1">Acesso Administrativo</p>
+            </div>
+            
+            <form id="form-login" class="space-y-4">
+                <input type="email" id="login-email" class="w-full p-4 bg-slate-50 border rounded-xl outline-none focus:border-blue-500 transition" placeholder="Seu email" required>
+                <input type="password" id="login-pass" class="w-full p-4 bg-slate-50 border rounded-xl outline-none focus:border-blue-500 transition" placeholder="Sua senha" required>
+                <button type="submit" id="btn-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Entrar no Sistema
+                </button>
+            </form>
+            
+            <div class="text-center mt-6">
+                <button onclick="showResetPassword()" class="text-blue-600 text-sm hover:underline">
+                    <i class="fas fa-key mr-1"></i> Esqueci minha senha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL REDEFINIR SENHA ==================== -->
+    <div id="reset-password-modal" class="hidden fixed inset-0 modal-overlay z-[6000] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-900">Redefinir Senha</h3>
+                <button onclick="closeResetModal()" class="text-slate-400 hover:text-red-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <p class="text-slate-600 text-sm">Digite seu e-mail para receber o link de redefinição:</p>
+                <input type="email" id="reset-email" placeholder="seu@email.com" class="w-full p-3 bg-slate-50 border rounded-lg outline-none focus:border-blue-500">
+                
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeResetModal()" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-lg font-bold">
+                        Cancelar
+                    </button>
+                    <button onclick="sendPasswordReset()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
+                        Enviar Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== APLICATIVO PRINCIPAL ==================== -->
+    <div id="app-content" class="hidden min-h-screen p-4 lg:p-8">
+        <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-3 rounded-xl text-white shadow-lg">
+                    <i class="fas fa-road text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">FrotaForte</h1>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase">Painel Administrativo</span>
+                        <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-full" id="company-name-header">
+                            Carregando...
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 items-center w-full md:w-auto">
+                <div class="relative flex-1 md:flex-none">
+                    <select id="quick-search" class="w-full md:w-64 bg-white border border-slate-300 text-slate-600 text-sm rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">🔍 Buscar Veículo...</option>
+                    </select>
+                </div>
+                <button onclick="switchPage('config')" class="bg-white border p-3 rounded-xl text-slate-600 hover:bg-slate-50 transition" title="Configurações">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button onclick="logout()" class="bg-slate-900 text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-black transition" title="Sair">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="max-w-7xl mx-auto flex gap-2 mb-8 bg-white p-2 rounded-2xl border shadow-sm sticky top-2 z-40">
+            <div onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-item active flex-1 text-center">
+                <i class="fas fa-chart-pie mr-2"></i>Dashboard
+            </div>
+            <div onclick="switchPage('vehicles')" id="nav-vehicles" class="nav-item flex-1 text-center">
+                <i class="fas fa-car mr-2"></i>Veículos
+            </div>
+            <div onclick="switchPage('units')" id="nav-units" class="nav-item flex-1 text-center">
+                <i class="fas fa-building mr-2"></i>Unidades
+            </div>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="max-w-7xl mx-auto">
+            
+            <!-- Página: Dashboard -->
+            <section id="page-dashboard" class="page-content fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="glass-card p-6 border-l-4 border-blue-600">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Total Frota</p>
+                                <h3 class="text-4xl font-black text-slate-800" id="dash-v-count">0</h3>
+                            </div>
+                            <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
+                                <i class="fas fa-car text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-6 border-l-4 border-amber-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Sem Atualização</p>
+                                <h3 class="text-4xl font-black text-amber-600" id="dash-inativos">0</h3>
+                            </div>
+                            <div class="p-3 bg-amber-50 rounded-lg text-amber-600">
+                                <i class="fas fa-clock text-xl"></i>
+                            </div>
+                        </div>
+                        <div id="alert-container" class="mt-2"></div>
+                    </div>
+                    
+                    <div class="glass-card p-6 border-l-4 border-emerald-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Unidades</p>
+                                <h3 class="text-4xl font-black text-emerald-600" id="dash-u-count">0</h3>
+                            </div>
+                            <div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+                                <i class="fas fa-building text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTAINER DOS ALERTAS DE MANUTENÇÃO (NOVO) -->
+                <div class="mb-6" id="maintenance-alerts-container">
+                    <div class="glass-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fas fa-bell text-blue-500"></i>
+                                Sistema de Manutenção
+                            </h3>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
+                                Carregando...
+                            </span>
+                        </div>
+                        <div class="text-center py-6">
+                            <div class="spinner-small mx-auto mb-3"></div>
+                            <p class="text-slate-400 text-sm">Inicializando sistema de alertas...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-card p-6 lg:col-span-2">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="font-bold text-slate-800 text-lg">Atividade Recente</h2>
+                            <button onclick="openNewVehicleModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition">
+                                <i class="fas fa-plus mr-2"></i>Novo Veículo
+                            </button>
+                        </div>
+                        <div id="recent-list" class="space-y-3"></div>
+                    </div>
+
+                    <div class="glass-card p-6 bg-slate-50">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="font-bold text-slate-800">Filtrar por Unidade</h2>
+                            <button onclick="switchPage('units')" class="text-xs text-blue-600 font-bold hover:underline">Gerenciar</button>
+                        </div>
+                        <div id="unit-grid" class="grid grid-cols-1 gap-3"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Página: Veículos -->
+            <section id="page-vehicles" class="page-content hidden fade-in">
+                <div class="glass-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold" id="vehicle-list-title">Todos os Veículos</h2>
+                        <div class="flex gap-2">
+                            <button onclick="renderVehicles()" class="text-xs bg-slate-100 text-slate-600 px-3 py-2 rounded-lg font-bold hover:bg-slate-200">
+                                Limpar Filtro
+                            </button>
+                            <button onclick="openNewVehicleModal()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black">
+                                <i class="fas fa-plus"></i> Novo Veículo
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase">Marca/Modelo</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase">Placa Oficial</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase">Tipo</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase">Unidade</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-vehicles" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Página: Unidades -->
+            <section id="page-units" class="page-content hidden fade-in">
+                <div class="glass-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">Gestão de Unidades</h2>
+                        <button onclick="openUnitModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md">
+                            <i class="fas fa-plus mr-2"></i>Nova Unidade
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="units-list-page"></div>
+                </div>
+            </section>
+
+            <!-- Página: Configurações -->
+            <section id="page-config" class="page-content hidden fade-in">
+                <div class="max-w-2xl mx-auto">
+                    <div class="glass-card p-6 mb-6">
+                        <h2 class="text-xl font-bold mb-6">Configurações da Empresa</h2>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-sm font-bold text-slate-700 mb-2 block">E-mail para Alertas</label>
+                                <input type="email" id="cfg-manager-email" class="w-full p-3 bg-slate-50 border rounded-lg outline-none focus:border-blue-500" placeholder="gerente@empresa.com">
+                                <p class="text-xs text-slate-500 mt-1">Receberá alertas sobre veículos sem atualização</p>
+                            </div>
+                            
+                            <div>
+                                <label class="text-sm font-bold text-slate-700 mb-2 block">Informações da Empresa</label>
+                                <div class="bg-slate-50 p-4 rounded-lg">
+                                    <p class="text-sm"><strong>Nome:</strong> <span id="cfg-company-name">Carregando...</span></p>
+                                    <p class="text-sm"><strong>Plano:</strong> <span id="cfg-company-plan" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">Carregando...</span></p>
+                                    <p class="text-sm"><strong>Status:</strong> <span id="cfg-company-status">Carregando...</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="saveConfigs()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">
+                            <i class="fas fa-save mr-2"></i> Salvar Configurações
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==================== MODAL VEÍCULO ==================== -->
+    <div id="modal-veiculo" class="fixed inset-0 modal-overlay hidden z-[6000] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh] fade-in">
+            
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800" id="modal-vehicle-title">Novo Veículo</h3>
+                    <p class="text-xs text-slate-400 font-bold uppercase" id="modal-vehicle-subtitle">Cadastro Inicial</p>
+                </div>
+                <button onclick="closeModal('modal-veiculo')" class="text-slate-400 hover:text-red-500">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="flex px-6 border-b gap-6 bg-white sticky top-0 z-10">
+                <button onclick="switchTab('cadastro')" id="tab-cadastro" class="tab-btn active py-4 text-sm font-bold uppercase">Dados Cadastrais</button>
+                <button onclick="switchTab('manutencao')" id="tab-manutencao" class="tab-btn py-4 text-sm font-bold uppercase hidden">Histórico & Manutenção</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                
+                <form id="form-vehicle" class="space-y-4">
+                    <input type="hidden" id="v-id">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Marca/Modelo *</label>
+                            <input type="text" id="v-model" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Toyota Hilux" required>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Situação da Frota</label>
+                            <select id="v-type" onchange="toggleRentalField()" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
+                                <option value="propria">Frota Própria</option>
+                                <option value="locado">Locado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="rental-company-group" class="hidden">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Nome da Locadora</label>
+                            <input type="text" id="v-rental-co" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Localiza, Movida...">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Placa Oficial *</label>
+                            <input type="text" id="v-plate-off" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none font-mono" placeholder="ABC-1234" required>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Placa Reservada (Opcional)</label>
+                            <input type="text" id="v-plate-res" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none font-mono" placeholder="---">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Unidade Operacional</label>
+                            <div class="flex gap-2">
+                                <select id="v-unit-select" class="flex-1 p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
+                                    <option value="">Selecione a Unidade...</option>
+                                </select>
+                                <!-- BOTÃO PARA CRIAR UNIDADE RÁPIDA -->
+                                <button type="button" onclick="openQuickUnitModal()" class="bg-emerald-500 text-white p-3 rounded-lg hover:bg-emerald-600 quick-unit-btn" title="Criar nova unidade">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">KM Atual *</label>
+                            <input type="number" id="v-km" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="0" required min="0">
+                            <!-- CHECKBOX NOVO (SIMPLIFICADO) -->
+                            <div class="mt-3">
+                                <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                                    <input type="checkbox" id="v-all-maintenance-done" class="w-4 h-4">
+                                    <span>✓ Todas manutenções em dia</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="content-manutencao" class="hidden space-y-6">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <h4 class="font-bold text-blue-800 mb-3 text-sm flex items-center gap-2">
+                            <i class="fas fa-tools"></i> Registrar Nova Manutenção
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <!-- SELECT DE TIPO -->
+                            <select id="m-type" class="p-2 rounded border outline-none text-sm focus:border-blue-500">
+                                <option value="">📋 Tipo de serviço...</option>
+                                <option value="oleo">🛢️ Troca de Óleo</option>
+                                <option value="revisao">🔧 Revisão Geral</option>
+                                <option value="pneus">🚗 Pneus</option>
+                                <option value="freios">🛑 Freios</option>
+                                <option value="outro">✨ Outro</option>
+                            </select>
+                            
+                            <input type="text" id="m-desc" placeholder="Descrição" class="p-2 rounded border outline-none text-sm focus:border-blue-500">
+                            <input type="number" id="m-km" placeholder="KM Atual" class="p-2 rounded border outline-none text-sm focus:border-blue-500" min="0">
+                            <input type="date" id="m-date" class="p-2 rounded border outline-none text-sm focus:border-blue-500">
+                            <input type="text" id="m-location" placeholder="Local" class="md:col-span-2 p-2 rounded border outline-none text-sm focus:border-blue-500">
+                        </div>
+                        
+                        <button onclick="addMaintenance()" class="w-full mt-2 bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i> Adicionar Registro
+                        </button>
+                        <p class="text-[10px] text-blue-500 mt-2">* Atualizará o KM do veículo se for maior que o atual.</p>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-700 mb-3 text-sm">Histórico de Registros</h4>
+                        <div id="maintenance-list" class="space-y-2">
+                            <!-- Lista de manutenções será carregada aqui -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-6 border-t bg-slate-50 rounded-b-2xl flex justify-end gap-3" id="footer-cadastro">
+                <button onclick="closeModal('modal-veiculo')" class="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300">
+                    Cancelar
+                </button>
+                <button onclick="saveVehicle()" class="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-black shadow-lg">
+                    <i class="fas fa-save mr-2"></i> Salvar Dados
+                </button>
+            </div>
+            
+            <div class="p-6 border-t bg-slate-50 rounded-b-2xl flex justify-end gap-3 hidden" id="footer-manutencao">
+                <button onclick="closeModal('modal-veiculo')" class="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300">
+                    <i class="fas fa-times mr-2"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL UNIDADE RÁPIDA ==================== -->
+    <div id="modal-unidade-rapida" class="fixed inset-0 modal-overlay hidden z-[7000] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800">Nova Unidade Rápida</h3>
+                <button onclick="closeModal('modal-unidade-rapida')" class="text-slate-400 hover:text-red-500">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Nome da Unidade *</label>
+                    <input type="text" id="quick-unit-name" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-emerald-500 outline-none" placeholder="Ex: Matriz, Filial SP">
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Cidade/UF *</label>
+                    <input type="text" id="quick-unit-city" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-emerald-500 outline-none" placeholder="Ex: São Paulo/SP">
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeModal('modal-unidade-rapida')" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200">
+                        Cancelar
+                    </button>
+                    <button onclick="saveQuickUnit()" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700">
+                        <i class="fas fa-plus mr-2"></i> Criar e Usar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL UNIDADE ==================== -->
+    <div id="modal-unidade" class="fixed inset-0 modal-overlay hidden z-[6000] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 fade-in border border-slate-100">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-xl font-bold text-slate-800" id="modal-unit-title">Nova Unidade</h3>
+                <button onclick="closeModal('modal-unidade')" class="text-slate-400 hover:text-red-500 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-unit" class="space-y-4">
+                <input type="hidden" id="u-id">
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Nome da Unidade *</label>
+                    <input type="text" id="u-name" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-emerald-500 outline-none" placeholder="Ex: Matriz, Filial SP" required>
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Cidade/UF *</label>
+                    <input type="text" id="u-city" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-emerald-500 outline-none" placeholder="Ex: São Paulo/SP" required>
+                </div>
+                
+                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition mt-2 shadow-lg">
+                    <i class="fas fa-save mr-2"></i> Salvar Unidade
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL CONFIRMAÇÃO EXCLUSÃO ==================== -->
+    <div id="modal-confirm" class="fixed inset-0 modal-overlay hidden z-[7000] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div class="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">Confirmar Exclusão</h3>
+            <p class="text-slate-600 mb-6 text-sm" id="confirm-message">Essa ação é irreversível.</p>
+            <div class="flex gap-3">
+                <button onclick="closeModal('modal-confirm')" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200">
+                    Cancelar
+                </button>
+                <button id="btn-confirm-delete" class="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">
+                    Sim, Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    
+    <!-- Nossos Arquivos JavaScript (IMPORTANTE: ORDEM CORRETA!) -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+    <!-- ARQUIVO DOS ALERTAS (NOVO) -->
+    <script src="js/alerts.js"></script>
+
+</body>
+</html>
