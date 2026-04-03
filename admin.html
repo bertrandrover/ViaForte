@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - FrotaForte</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SEM defer (importante!) -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    
+    <style>
+        body { background: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .hidden { display: none !important; }
+        
+        /* NOTIFICAÇÕES MODERNAS */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 320px;
+            max-width: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            overflow: hidden;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-left-color: #10b981;
+        }
+        
+        .notification.error {
+            border-left-color: #ef4444;
+        }
+        
+        .notification.warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .notification.info {
+            border-left-color: #3b82f6;
+        }
+        
+        .notification-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .notification.success .notification-icon {
+            background: #d1fae5;
+            color: #10b981;
+        }
+        
+        .notification.error .notification-icon {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        
+        .notification.warning .notification-icon {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+        
+        .notification.info .notification-icon {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #111827;
+        }
+        
+        .notification-message {
+            padding: 0 20px 16px 72px;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+        
+        .notification-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+        }
+        
+        .notification-close:hover {
+            color: #6b7280;
+        }
+        
+        .notification-progress {
+            height: 4px;
+            background: linear-gradient(to right, currentColor, currentColor);
+            width: 100%;
+            transition: width 5s linear;
+        }
+        
+        .notification.show .notification-progress {
+            width: 0%;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    
+    <!-- Tela de Login Admin -->
+    <div id="login-screen" class="fixed inset-0 bg-gray-100 flex items-center justify-center">
+        <div class="glass-card p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="inline-flex bg-gray-900 p-4 rounded-2xl text-white mb-4">
+                    <i class="fas fa-shield-alt text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold">FrotaForte Admin</h1>
+                <p class="text-gray-500 text-sm">Painel Administrativo</p>
+            </div>
+            
+            <form id="form-admin-login" class="space-y-4">
+                <input type="email" id="admin-login-email" placeholder="Email admin" class="w-full p-3 border rounded-lg" value="admin@viaforte.com.br">
+                <input type="password" id="admin-login-password" placeholder="Senha" class="w-full p-3 border rounded-lg">
+                <button type="submit" class="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-black">
+                    <i class="fas fa-lock mr-2"></i> Acessar Painel Admin
+                </button>
+            </form>
+            
+            <div class="text-center mt-6">
+                <a href="index.html" class="text-blue-600 text-sm hover:underline">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar ao Sistema Principal
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Painel Admin -->
+    <div id="admin-panel" class="hidden min-h-screen p-6">
+        <header class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">👑 Painel Administrativo</h1>
+                    <p class="text-gray-500">Gerenciamento de Empresas e Usuários</p>
+                </div>
+                <button id="btn-logout" class="bg-gray-900 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Sair
+                </button>
+            </div>
+        </header>
+        
+        <!-- Estatísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Empresas</p>
+                        <h3 class="text-3xl font-bold" id="total-companies">0</h3>
+                    </div>
+                    <div class="text-blue-500 text-2xl"><i class="fas fa-building"></i></div>
+                </div>
+            </div>
+            
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-500">Empresas Ativas</p>
+                        <h3 class="text-3xl font-bold" id="active-companies">0</h3>
+                    </div>
+                    <div class="text-green-500 text-2xl"><i class="fas fa-check-circle"></i></div>
+                </div>
+            </div>
+            
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Usuários</p>
+                        <h3 class="text-3xl font-bold" id="total-users">0</h3>
+                    </div>
+                    <div class="text-purple-500 text-2xl"><i class="fas fa-users"></i></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabela de Empresas -->
+        <div class="glass-card p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Todas as Empresas</h2>
+                <button id="btn-new-company" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700">
+                    <i class="fas fa-plus mr-2"></i> Nova Empresa
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="p-4 text-left font-bold text-gray-700">Nome da Empresa</th>
+                            <th class="p-4 text-left font-bold text-gray-700">Plano</th>
+                            <th class="p-4 text-left font-bold text-gray-700">Status</th>
+                            <th class="p-4 text-left font-bold text-gray-700">Usuários</th>
+                            <th class="p-4 text-left font-bold text-gray-700">Criada em</th>
+                            <th class="p-4 text-left font-bold text-gray-700">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companies-table">
+                        <tr><td colspan="6" class="p-4 text-center text-gray-500">Carregando empresas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="text-center text-gray-500 text-sm">
+            <p>Painel restrito ao administrador principal</p>
+        </div>
+    </div>
+    
+    <!-- Modal Nova Empresa -->
+    <div id="modal-new-company" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Nova Empresa</h3>
+                <button id="btn-close-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Nome da Empresa *</label>
+                    <input type="text" id="new-company-name" class="w-full p-3 border rounded-lg" placeholder="Ex: Transportadora XYZ">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Email do Administrador *</label>
+                    <input type="email" id="new-admin-email" class="w-full p-3 border rounded-lg" placeholder="admin@empresa.com">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Senha Temporária *</label>
+                    <input type="password" id="new-admin-password" class="w-full p-3 border rounded-lg" placeholder="Mínimo 6 caracteres">
+                    <p class="text-xs text-gray-500 mt-1">O cliente poderá alterar após o primeiro login</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Plano</label>
+                    <select id="new-company-plan" class="w-full p-3 border rounded-lg">
+                        <option value="trial">Teste Gratuito (30 dias)</option>
+                        <option value="basic">Basic (até 20 veículos)</option>
+                        <option value="premium" selected>Premium (ilimitado)</option>
+                    </select>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button id="btn-cancel-modal" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-bold">
+                        Cancelar
+                    </button>
+                    <button id="btn-create-company" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">
+                        <i class="fas fa-check mr-2"></i> Criar Empresa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO MODERNO -->
+    <div id="modal-confirm" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+            <div class="flex items-start mb-4">
+                <div class="flex-shrink-0 mr-3">
+                    <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900" id="confirm-title">Confirmação</h3>
+                    <p class="text-gray-600 mt-1" id="confirm-message">Tem certeza que deseja continuar?</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button id="confirm-cancel" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200">
+                    Cancelar
+                </button>
+                <button id="confirm-ok" class="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL - GARANTE QUE TUDO CARREGOU -->
+    <script>
+        // AGUARDA TUDO CARREGAR
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🔥 DOM carregado, inicializando Firebase...");
+            
+            // 1. CONFIGURAÇÃO FIREBASE
+            const firebaseConfig = {
+                apiKey: "AIzaSyD8yswxc2HS66Sjf-8XCUJ3ta7WY24_nEk",
+                authDomain: "frotar-io.firebaseapp.com",
+                databaseURL: "https://frotar-io-default-rtdb.firebaseio.com",
+                projectId: "frotar-io",
+                storageBucket: "frotar-io.firebasestorage.app",
+                messagingSenderId: "68520426030",
+                appId: "1:68520426030:web:91333e358781671648fdbf"
+            };
+            
+            // 2. INICIALIZA FIREBASE (verifica se já não foi)
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            
+            const auth = firebase.auth();
+            const db = firebase.database();
+            
+            console.log("✅ Firebase inicializado!");
+            
+            // 3. ADMIN EMAIL (apenas você)
+            const ADMIN_EMAIL = "admin@viaforte.com.br";
+            
+            // 4. VARIÁVEIS GLOBAIS
+            let allCompanies = [];
+            let allUsers = [];
+            
+            // 5. SISTEMA DE NOTIFICAÇÕES MODERNO
+            function showNotification(title, message, type = 'info', duration = 5000) {
+                const types = {
+                    'success': { icon: 'fa-check', color: '#10b981', bg: '#d1fae5' },
+                    'error': { icon: 'fa-times', color: '#ef4444', bg: '#fee2e2' },
+                    'warning': { icon: 'fa-exclamation-triangle', color: '#f59e0b', bg: '#fef3c7' },
+                    'info': { icon: 'fa-info-circle', color: '#3b82f6', bg: '#dbeafe' }
+                };
+                
+                const config = types[type] || types.info;
+                
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <div class="notification-header">
+                        <div class="notification-icon">
+                            <i class="fas ${config.icon}"></i>
+                        </div>
+                        <div class="notification-title">${title}</div>
+                        <button class="notification-close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="notification-message">${message}</div>
+                    <div class="notification-progress"></div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Mostra com animação
+                setTimeout(() => notification.classList.add('show'), 10);
+                
+                // Configura progresso
+                const progress = notification.querySelector('.notification-progress');
+                progress.style.transition = `width ${duration}ms linear`;
+                
+                setTimeout(() => {
+                    progress.style.width = '0%';
+                }, 100);
+                
+                // Fecha automaticamente
+                const timeout = setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }, duration);
+                
+                // Fecha ao clicar no X
+                notification.querySelector('.notification-close').addEventListener('click', () => {
+                    clearTimeout(timeout);
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                });
+                
+                // Fecha ao clicar na notificação
+                notification.addEventListener('click', (e) => {
+                    if (!e.target.closest('.notification-close')) {
+                        clearTimeout(timeout);
+                        notification.classList.remove('show');
+                        setTimeout(() => notification.remove(), 300);
+                    }
+                });
+                
+                return notification;
+            }
+            
+            // 6. SISTEMA DE CONFIRMAÇÃO MODERNO (substitui o confirm() feio)
+            function showConfirm(title, message) {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('modal-confirm');
+                    const titleEl = document.getElementById('confirm-title');
+                    const messageEl = document.getElementById('confirm-message');
+                    const cancelBtn = document.getElementById('confirm-cancel');
+                    const okBtn = document.getElementById('confirm-ok');
+                    
+                    titleEl.textContent = title;
+                    messageEl.textContent = message;
+                    
+                    modal.classList.remove('hidden');
+                    
+                    const handleResponse = (response) => {
+                        modal.classList.add('hidden');
+                        resolve(response);
+                        
+                        // Remove listeners
+                        cancelBtn.removeEventListener('click', cancelHandler);
+                        okBtn.removeEventListener('click', okHandler);
+                    };
+                    
+                    const cancelHandler = () => handleResponse(false);
+                    const okHandler = () => handleResponse(true);
+                    
+                    cancelBtn.addEventListener('click', cancelHandler);
+                    okBtn.addEventListener('click', okHandler);
+                    
+                    // Fecha com ESC
+                    const escHandler = (e) => {
+                        if (e.key === 'Escape') {
+                            handleResponse(false);
+                            document.removeEventListener('keydown', escHandler);
+                        }
+                    };
+                    
+                    document.addEventListener('keydown', escHandler);
+                    
+                    // Remove o listener quando o modal fechar
+                    setTimeout(() => {
+                        modal.addEventListener('transitionend', function once() {
+                            document.removeEventListener('keydown', escHandler);
+                            modal.removeEventListener('transitionend', once);
+                        });
+                    }, 300);
+                });
+            }
+            
+            // 7. CARREGA DADOS DO ADMIN
+            async function loadAdminData() {
+                try {
+                    console.log("📊 Carregando dados admin...");
+                    
+                    // Carrega empresas
+                    const companiesSnap = await db.ref('companies').once('value');
+                    allCompanies = companiesSnap.val() ? 
+                        Object.entries(companiesSnap.val()).map(([id, data]) => ({id, ...data})) : [];
+                    
+                    console.log(`🏢 Empresas carregadas: ${allCompanies.length}`);
+                    
+                    // Carrega usuários
+                    const usersSnap = await db.ref('users').once('value');
+                    allUsers = usersSnap.val() ? 
+                        Object.entries(usersSnap.val()).map(([id, data]) => ({id, ...data})) : [];
+                    
+                    console.log(`👤 Usuários carregados: ${allUsers.length}`);
+                    
+                    renderCompaniesTable();
+                    renderStats();
+                    
+                } catch (error) {
+                    console.error("Erro ao carregar dados:", error);
+                    showNotification("Erro", "Erro ao carregar dados: " + error.message, 'error');
+                }
+            }
+            
+            // 8. RENDERIZA TABELA DE EMPRESAS
+            function renderCompaniesTable() {
+                const tbody = document.getElementById('companies-table');
+                if (!tbody) {
+                    console.error("❌ Elemento companies-table não encontrado!");
+                    return;
+                }
+                
+                console.log("🔄 Renderizando tabela de empresas...");
+                
+                if (allCompanies.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-gray-500">
+                                <i class="fas fa-building text-4xl text-gray-300 mb-4 block"></i>
+                                Nenhuma empresa cadastrada
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = allCompanies.map(company => {
+                    const companyUsers = allUsers.filter(u => u.companyId === company.id);
+                    const adminUser = companyUsers.find(u => u.role === 'admin');
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-4 border-b">
+                                <div class="font-bold">${company.name || 'Sem nome'}</div>
+                                <div class="text-xs text-gray-500">ID: ${company.id}</div>
+                            </td>
+                            <td class="p-4 border-b">
+                                <span class="px-2 py-1 rounded text-xs font-bold ${
+                                    company.plan === 'premium' ? 'bg-purple-100 text-purple-700' :
+                                    company.plan === 'basic' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-green-100 text-green-700'
+                                }">
+                                    ${company.plan || 'trial'}
+                                </span>
+                            </td>
+                            <td class="p-4 border-b">
+                                <span class="px-2 py-1 rounded text-xs font-bold ${
+                                    company.status === 'active' ? 'bg-green-100 text-green-700' :
+                                    'bg-red-100 text-red-700'
+                                }">
+                                    ${company.status || 'active'}
+                                </span>
+                            </td>
+                            <td class="p-4 border-b">
+                                <div>${companyUsers.length} usuário(s)</div>
+                                ${adminUser ? `<div class="text-xs text-gray-500">Admin: ${adminUser.email}</div>` : ''}
+                            </td>
+                            <td class="p-4 border-b">
+                                ${company.createdAt ? new Date(company.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
+                            </td>
+                            <td class="p-4 border-b text-right">
+                                <button data-action="view" data-company-id="${company.id}" class="text-blue-600 hover:text-blue-800 text-sm mr-2" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button data-action="edit" data-company-id="${company.id}" class="text-yellow-600 hover:text-yellow-800 text-sm mr-2" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button data-action="add-user" data-company-id="${company.id}" class="text-green-600 hover:text-green-800 text-sm mr-2" title="Adicionar usuário">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                                <button data-action="delete" data-company-id="${company.id}" data-company-name="${company.name}" class="text-red-600 hover:text-red-800 text-sm" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                console.log("✅ Tabela renderizada!");
+            }
+            
+            // 9. RENDERIZA ESTATÍSTICAS
+            function renderStats() {
+                const totalCompanies = document.getElementById('total-companies');
+                const totalUsers = document.getElementById('total-users');
+                const activeCompanies = document.getElementById('active-companies');
+                
+                if (totalCompanies) {
+                    totalCompanies.textContent = allCompanies.length;
+                }
+                
+                if (totalUsers) {
+                    totalUsers.textContent = allUsers.length;
+                }
+                
+                if (activeCompanies) {
+                    const active = allCompanies.filter(c => c.status === 'active').length;
+                    activeCompanies.textContent = active;
+                }
+            }
+            
+            // 10. FUNÇÕES DO MODAL NOVA EMPRESA
+            function showNewCompanyModal() {
+                console.log("📋 Abrindo modal nova empresa");
+                document.getElementById('modal-new-company').classList.remove('hidden');
+            }
+            
+            function closeModal() {
+                console.log("📋 Fechando modal");
+                document.getElementById('modal-new-company').classList.add('hidden');
+            }
+            
+            // 11. CRIA NOVA EMPRESA
+            async function createNewCompany() {
+                const name = document.getElementById('new-company-name').value.trim();
+                const email = document.getElementById('new-admin-email').value.trim();
+                const password = document.getElementById('new-admin-password').value;
+                const plan = document.getElementById('new-company-plan').value;
+                
+                console.log("🏗️ Criando nova empresa:", { name, email, plan });
+                
+                if (!name || !email || !password) {
+                    showNotification("Atenção", "Preencha todos os campos obrigatórios", 'warning');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showNotification("Atenção", "A senha deve ter pelo menos 6 caracteres", 'warning');
+                    return;
+                }
+                
+                // Validação de email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showNotification("Atenção", "Digite um email válido", 'warning');
+                    return;
+                }
+                
+                try {
+                    showNotification("Processando", "Criando empresa...", 'info');
+                    
+                    const tempPassword = password;
+                    
+                    // 1. Tenta criar usuário
+                    let userId;
+                    try {
+                        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                        userId = userCredential.user.uid;
+                        console.log("✅ Usuário criado:", userId);
+                    } catch (authError) {
+                        if (authError.code === 'auth/email-already-in-use') {
+                            const confirmed = await showConfirm(
+                                "Email já cadastrado",
+                                `O email ${email} já está cadastrado.\n\nDeseja vincular este usuário à nova empresa?\n\nO usuário manterá sua senha atual.`
+                            );
+                            
+                            if (!confirmed) return;
+                            
+                            const currentAdminPassword = prompt("Digite SUA senha de administrador para continuar:");
+                            if (!currentAdminPassword) {
+                                showNotification("Cancelado", "Operação cancelada.", 'info');
+                                return;
+                            }
+                            
+                            try {
+                                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                                userId = userCredential.user.uid;
+                                console.log("✅ Usuário existente encontrado:", userId);
+                                
+                                await auth.signOut();
+                                await auth.signInWithEmailAndPassword(ADMIN_EMAIL, currentAdminPassword);
+                                
+                            } catch (loginError) {
+                                console.error("Erro ao fazer login:", loginError);
+                                try {
+                                    await auth.signInWithEmailAndPassword(ADMIN_EMAIL, currentAdminPassword);
+                                } catch (finalError) {
+                                    showNotification("Erro", "Não foi possível retornar à conta admin. Por favor, faça login novamente.", 'error');
+                                    await auth.signOut();
+                                    return;
+                                }
+                            }
+                        } else {
+                            throw authError;
+                        }
+                    }
+                    
+                    // 2. Cria ID da empresa
+                    const companyId = "empresa_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
+                    console.log("🏢 Company ID:", companyId);
+                    
+                    // 3. Cria empresa
+                    const companyData = {
+                        name: name,
+                        plan: plan,
+                        status: 'active',
+                        createdAt: Date.now(),
+                        adminEmail: email,
+                        trialEnds: Date.now() + (30 * 24 * 60 * 60 * 1000)
+                    };
+                    
+                    await db.ref('companies/' + companyId).set(companyData);
+                    console.log("✅ Empresa salva no Firebase");
+                    
+                    // 4. Vincula usuário à empresa
+                    const userData = {
+                        email: email,
+                        companyId: companyId,
+                        role: 'admin',
+                        createdAt: Date.now(),
+                        companyName: name,
+                        createdBy: ADMIN_EMAIL,
+                        createdDate: Date.now()
+                    };
+                    
+                    await db.ref('users/' + userId).update(userData);
+                    console.log("✅ Usuário vinculado à empresa");
+                    
+                    // 5. Cria estrutura vazia
+                    await db.ref('data/' + companyId + '/vehicles').set({});
+                    await db.ref('data/' + companyId + '/units').set({});
+                    await db.ref('data/' + companyId + '/maintenances').set({});
+                    await db.ref('data/' + companyId + '/settings').set({
+                        managerEmail: email,
+                        createdBy: ADMIN_EMAIL,
+                        createdDate: Date.now()
+                    });
+                    
+                    console.log("✅ Estrutura de dados criada");
+                    
+                    // 6. Limpa e fecha
+                    document.getElementById('new-company-name').value = '';
+                    document.getElementById('new-admin-email').value = '';
+                    document.getElementById('new-admin-password').value = '';
+                    closeModal();
+                    
+                    // 7. Recarrega dados
+                    await loadAdminData();
+                    
+                    // 8. Mostra notificação bonita
+                    const message = `✅ Empresa "${name}" criada com sucesso!
+
+📋 DETALHES:
+• Empresa: ${name}
+• Email admin: ${email}
+• Senha: ${tempPassword.replace(/./g, '*')}
+• ID da Empresa: ${companyId}
+• Plano: ${plan === 'trial' ? 'Teste Gratuito (30 dias)' : plan}
+
+💡 INSTRUÇÕES:
+1. Envie essas credenciais ao cliente
+2. O cliente acessa: ${window.location.origin}/index.html
+3. Faz login com o email e senha acima
+4. Começa a cadastrar veículos`;
+                    
+                    showNotification("Empresa Criada!", message, 'success', 8000);
+                    
+                    // 9. Copia para área de transferência
+                    const copyText = `Empresa: ${name}\nEmail: ${email}\nSenha: ${tempPassword}\nAcesse: ${window.location.origin}/index.html`;
+                    navigator.clipboard.writeText(copyText).then(() => {
+                        console.log("✅ Credenciais copiadas para clipboard");
+                    });
+                    
+                } catch (error) {
+                    console.error("❌ Erro ao criar empresa:", error);
+                    showNotification("Erro", "Erro ao criar empresa: " + error.message, 'error');
+                }
+            }
+            
+            // 12. FUNÇÕES PARA EDITAR/EXCLUIR EMPRESAS
+            function viewCompany(companyId) {
+                const company = allCompanies.find(c => c.id === companyId);
+                if (company) {
+                    const companyUsers = allUsers.filter(u => u.companyId === companyId);
+                    
+                    const message = `🏢 ${company.name}
+📊 ID: ${companyId}
+📅 Criada: ${new Date(company.createdAt).toLocaleDateString('pt-BR')}
+📋 Plano: ${company.plan}
+✅ Status: ${company.status}
+👤 Admin: ${company.adminEmail || 'Não definido'}
+👥 Usuários: ${companyUsers.length} cadastrado(s)`;
+                    
+                    showNotification("Detalhes da Empresa", message, 'info', 6000);
+                }
+            }
+            
+            // FUNÇÃO EDITAR EMPRESA
+            async function editCompany(companyId) {
+                const company = allCompanies.find(c => c.id === companyId);
+                if (!company) {
+                    showNotification("Erro", "Empresa não encontrada", 'error');
+                    return;
+                }
+                
+                // Cria modal de edição
+                const modalHTML = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold">Editar Empresa</h3>
+                                <button class="text-gray-400 hover:text-gray-600 btn-close-edit-modal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Nome da Empresa</label>
+                                    <input type="text" id="edit-company-name" value="${company.name || ''}" class="w-full p-3 border rounded-lg">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Plano</label>
+                                    <select id="edit-company-plan" class="w-full p-3 border rounded-lg">
+                                        <option value="trial" ${company.plan === 'trial' ? 'selected' : ''}>Teste Gratuito (30 dias)</option>
+                                        <option value="basic" ${company.plan === 'basic' ? 'selected' : ''}>Basic (até 20 veículos)</option>
+                                        <option value="premium" ${company.plan === 'premium' ? 'selected' : ''}>Premium (ilimitado)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                                    <select id="edit-company-status" class="w-full p-3 border rounded-lg">
+                                        <option value="active" ${company.status === 'active' ? 'selected' : ''}>Ativa</option>
+                                        <option value="inactive" ${company.status === 'inactive' ? 'selected' : ''}>Inativa</option>
+                                        <option value="suspended" ${company.status === 'suspended' ? 'selected' : ''}>Suspensa</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="pt-4">
+                                    <div class="text-xs text-gray-500 mb-2">ID da empresa:</div>
+                                    <div class="font-mono text-sm bg-gray-100 p-2 rounded">${companyId}</div>
+                                </div>
+                                
+                                <div class="flex gap-3 pt-4">
+                                    <button class="btn-cancel-edit flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-bold">
+                                        Cancelar
+                                    </button>
+                                    <button class="btn-save-company flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
+                                        <i class="fas fa-save mr-2"></i> Salvar Alterações
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                const modalContainer = document.createElement('div');
+                modalContainer.id = 'modal-edit-company-' + companyId;
+                modalContainer.innerHTML = modalHTML;
+                document.body.appendChild(modalContainer);
+                
+                modalContainer.querySelector('.btn-close-edit-modal').addEventListener('click', () => {
+                    modalContainer.remove();
+                });
+                
+                modalContainer.querySelector('.btn-cancel-edit').addEventListener('click', () => {
+                    modalContainer.remove();
+                });
+                
+                modalContainer.querySelector('.btn-save-company').addEventListener('click', async () => {
+                    const updates = {
+                        name: modalContainer.querySelector('#edit-company-name').value.trim(),
+                        plan: modalContainer.querySelector('#edit-company-plan').value,
+                        status: modalContainer.querySelector('#edit-company-status').value,
+                        updatedAt: Date.now()
+                    };
+                    
+                    if (!updates.name) {
+                        showNotification("Atenção", "O nome da empresa é obrigatório", 'warning');
+                        return;
+                    }
+                    
+                    try {
+                        await db.ref('companies/' + companyId).update(updates);
+                        showNotification("Sucesso", `Empresa "${updates.name}" atualizada com sucesso!`, 'success');
+                        modalContainer.remove();
+                        await loadAdminData();
+                    } catch (error) {
+                        showNotification("Erro", "Erro ao atualizar: " + error.message, 'error');
+                    }
+                });
+                
+                const closeModal = () => modalContainer.remove();
+                modalContainer.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') closeModal();
+                });
+                
+                modalContainer.addEventListener('click', (e) => {
+                    if (e.target === modalContainer) {
+                        closeModal();
+                    }
+                });
+                
+                setTimeout(() => {
+                    const nameInput = modalContainer.querySelector('#edit-company-name');
+                    if (nameInput) nameInput.focus();
+                }, 100);
+            }
+            
+            function addUserToCompany(companyId) {
+                const company = allCompanies.find(c => c.id === companyId);
+                if (company) {
+                    showNotification("Em desenvolvimento", `Funcionalidade "Adicionar Usuário" em breve!\n\nEmpresa: ${company.name}`, 'info');
+                }
+            }
+            
+            async function deleteCompany(companyId, companyName) {
+                const confirmed = await showConfirm(
+                    "Excluir Empresa",
+                    `⚠️ ATENÇÃO!\n\nVocê está prestes a excluir a empresa:\n\n"${companyName}"\n\nEsta ação NÃO pode ser desfeita!\n\nDeseja continuar?`
+                );
+                
+                if (!confirmed) return;
+                
+                try {
+                    showNotification("Processando", "Excluindo empresa...", 'info');
+                    
+                    // 1. Remove a empresa
+                    await db.ref('companies/' + companyId).remove();
+                    
+                    // 2. Remove dados da empresa
+                    try {
+                        await db.ref('data/' + companyId).remove();
+                    } catch (dataError) {
+                        console.warn("⚠️ Não foi possível excluir dados da empresa:", dataError);
+                    }
+                    
+                    // 3. Remove usuários vinculados
+                    const companyUsers = allUsers.filter(u => u.companyId === companyId);
+                    for (const user of companyUsers) {
+                        try {
+                            await db.ref('users/' + user.id).remove();
+                            console.log(`✅ Usuário ${user.email} removido`);
+                        } catch (userError) {
+                            console.warn(`⚠️ Não foi possível remover usuário ${user.email}:`, userError);
+                        }
+                    }
+                    
+                    showNotification("Sucesso", `Empresa "${companyName}" excluída com sucesso!`, 'success');
+                    await loadAdminData();
+                    
+                } catch (error) {
+                    console.error("❌ Erro completo:", error);
+                    
+                    if (error.message.includes('PERMISSION_DENIED')) {
+                        showNotification("Permissão Negada", 
+                            `Para excluir empresas, você precisa:\n\n1. Acessar Firebase Console\n2. Ir em Realtime Database > Regras\n3. Configurar permissões para admin@viaforte.com.br\n\nErro: ${error.message}`, 
+                            'error', 8000);
+                    } else {
+                        showNotification("Erro", "Erro ao excluir: " + error.message, 'error');
+                    }
+                }
+            }
+            
+            // 13. CONFIGURA EVENT LISTENERS
+            console.log("🔗 Configurando event listeners...");
+            
+            // Formulário de login
+            const formLogin = document.getElementById('form-admin-login');
+            if (formLogin) {
+                formLogin.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    console.log("📝 Submetendo formulário de login");
+                    
+                    const email = document.getElementById('admin-login-email').value;
+                    const password = document.getElementById('admin-login-password').value;
+                    
+                    try {
+                        await auth.signInWithEmailAndPassword(email, password);
+                        console.log("✅ Login enviado");
+                    } catch (error) {
+                        console.error("❌ Login falhou:", error);
+                        showNotification("Login Falhou", "Login falhou: " + error.message, 'error');
+                    }
+                });
+            }
+            
+            // Botão logout
+            const btnLogout = document.getElementById('btn-logout');
+            if (btnLogout) {
+                btnLogout.addEventListener('click', function() {
+                    console.log("👋 Logout solicitado");
+                    auth.signOut();
+                    showNotification("Logout", "Você saiu do painel admin", 'info');
+                });
+            }
+            
+            // Botão nova empresa
+            const btnNewCompany = document.getElementById('btn-new-company');
+            if (btnNewCompany) {
+                btnNewCompany.addEventListener('click', showNewCompanyModal);
+            }
+            
+            // Botões do modal
+            const btnCloseModal = document.getElementById('btn-close-modal');
+            const btnCancelModal = document.getElementById('btn-cancel-modal');
+            const btnCreateCompany = document.getElementById('btn-create-company');
+            
+            if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+            if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+            if (btnCreateCompany) btnCreateCompany.addEventListener('click', createNewCompany);
+            
+            // Botões do modal de confirmação
+            document.getElementById('confirm-cancel').addEventListener('click', () => {
+                document.getElementById('modal-confirm').classList.add('hidden');
+            });
+            
+            // Fecha modal com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (!document.getElementById('modal-new-company').classList.contains('hidden')) {
+                        closeModal();
+                    }
+                    if (!document.getElementById('modal-confirm').classList.contains('hidden')) {
+                        document.getElementById('modal-confirm').classList.add('hidden');
+                    }
+                }
+            });
+            
+            // EVENT LISTENER PARA BOTÕES DA TABELA
+            document.addEventListener('click', function(e) {
+                const button = e.target.closest('[data-action]');
+                if (button) {
+                    const action = button.dataset.action;
+                    const companyId = button.dataset.companyId;
+                    const companyName = button.dataset.companyName;
+                    
+                    console.log(`🔘 Botão clicado: ${action} para empresa ${companyId}`);
+                    
+                    switch(action) {
+                        case 'view':
+                            viewCompany(companyId);
+                            break;
+                        case 'edit':
+                            editCompany(companyId);
+                            break;
+                        case 'add-user':
+                            addUserToCompany(companyId);
+                            break;
+                        case 'delete':
+                            deleteCompany(companyId, companyName);
+                            break;
+                    }
+                }
+            });
+            
+            // 14. VERIFICA AUTENTICAÇÃO
+            console.log("🔐 Configurando listener de autenticação...");
+            
+            auth.onAuthStateChanged(async (user) => {
+                console.log("🔄 Estado de autenticação alterado:", user ? user.email : "Não logado");
+                
+                if (user && user.email === ADMIN_EMAIL) {
+                    console.log("✅ Admin autenticado, mostrando painel...");
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    
+                    // Carrega dados
+                    await loadAdminData();
+                    showNotification("Bem-vindo!", "Painel administrativo carregado com sucesso!", 'success');
+                    
+                } else if (user) {
+                    console.log("⚠️ Usuário não é admin:", user.email);
+                    showNotification("Acesso Negado", "Apenas o administrador principal pode acessar este painel.", 'error');
+                    await auth.signOut();
+                    
+                } else {
+                    console.log("👤 Não autenticado, mostrando tela de login");
+                    document.getElementById('admin-panel').classList.add('hidden');
+                    document.getElementById('login-screen').classList.remove('hidden');
+                }
+            });
+            
+            // Foco no campo de email
+            const emailInput = document.getElementById('admin-login-email');
+            if (emailInput) {
+                setTimeout(() => {
+                    emailInput.focus();
+                    console.log("🎯 Foco no campo de email");
+                }, 100);
+            }
+            
+            console.log("🎉 Sistema admin inicializado com sucesso!");
+        });
+        
+        // TRATAMENTO DE ERROS GLOBAIS
+        window.addEventListener('error', function(e) {
+            console.error("💥 ERRO GLOBAL:", e.error);
+            console.error("📄 Em:", e.filename, "linha:", e.lineno);
+            // Não mostra notificação para erros globais, apenas log
+        });
+        
+    </script>
+    
+</body>
+</html>

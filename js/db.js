@@ -87,8 +87,7 @@ function loadCompanyData() {
     });
 }
 
-// ==================== VEÍCULOS ====================
-function saveVehicle(vehicleData) {
+function saveVehicleToDB(vehicleData) {
     return new Promise((resolve, reject) => {
         if (!currentCompany || !currentCompany.id) {
             reject("Nenhuma empresa selecionada");
@@ -381,7 +380,7 @@ function updateQuickSearch() {
 // ==================== EXPORTAÇÕES ====================
 // Torna as funções disponíveis globalmente
 window.loadCompanyData = loadCompanyData;
-window.saveVehicle = saveVehicle;
+window.saveVehicleToDB = saveVehicleToDB;
 window.deleteVehicle = deleteVehicle;
 window.saveUnit = saveUnit;
 window.deleteUnit = deleteUnit;

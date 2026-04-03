@@ -205,6 +205,8 @@
                 </div>
             </section>
 
+            
+
             <!-- Página: Veículos -->
             <section id="page-vehicles" class="page-content hidden fade-in">
                 <div class="glass-card p-6">
@@ -213,6 +215,9 @@
                         <div class="flex gap-2">
                             <button onclick="renderVehicles()" class="text-xs bg-slate-100 text-slate-600 px-3 py-2 rounded-lg font-bold hover:bg-slate-200">
                                 Limpar Filtro
+                            </button>
+                            <button onclick="exportToCSV()" class="text-xs bg-emerald-600 text-white px-3 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-1">
+                                <i class="fas fa-file-export"></i> Exportar CSV
                             </button>
                             <button onclick="openNewVehicleModal()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black">
                                 <i class="fas fa-plus"></i> Novo Veículo
