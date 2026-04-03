@@ -23,7 +23,6 @@ function setupLoginForm() {
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Verifica se está bloqueado
         if (Date.now() < lockedUntil) {
             const minutesLeft = Math.ceil((lockedUntil - Date.now()) / 60000);
             showToast(`Acesso bloqueado. Tente novamente em ${minutesLeft} minutos.`, "error");
@@ -38,30 +37,21 @@ function setupLoginForm() {
             return;
         }
         
-        // Mostra loading no botão
         const btnLogin = document.getElementById('btn-login');
         const originalText = btnLogin.innerHTML;
         btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Entrando...';
         btnLogin.disabled = true;
         
         try {
-            // Configura persistência da sessão
-            await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-            
-            // Tenta fazer login
-            await auth.signInWithEmailAndPassword(email, password);
-            
-            // Login bem-sucedido - reseta tentativas
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+            await firebase.auth().signInWithEmailAndPassword(email, password);
             failedAttempts = 0;
-            
         } catch (error) {
-            // Restaura botão
             btnLogin.innerHTML = originalText;
             btnLogin.disabled = false;
             
             failedAttempts++;
             
-            // Mensagens de erro amigáveis
             let errorMessage = "Erro ao fazer login";
             
             switch(error.code) {
@@ -77,16 +67,12 @@ function setupLoginForm() {
                 case 'auth/network-request-failed':
                     errorMessage = "Erro de conexão. Verifique sua internet";
                     break;
-                case 'auth/user-disabled':
-                    errorMessage = "Esta conta foi desativada";
-                    break;
                 default:
                     errorMessage = error.message || "Erro desconhecido";
             }
             
-            // Verifica se deve bloquear
             if (failedAttempts >= MAX_ATTEMPTS) {
-                lockedUntil = Date.now() + (15 * 60 * 1000); // 15 minutos
+                lockedUntil = Date.now() + (15 * 60 * 1000);
                 errorMessage = `Muitas tentativas falhas. Acesso bloqueado por 15 minutos.`;
             } else {
                 errorMessage += ` (Tentativa ${failedAttempts}/${MAX_ATTEMPTS})`;
@@ -109,14 +95,13 @@ function sendPasswordReset() {
         return;
     }
     
-    // Valida formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showToast("Digite um email válido", "error");
         return;
     }
     
-    auth.sendPasswordResetEmail(email)
+    firebase.auth().sendPasswordResetEmail(email)
         .then(() => {
             showToast("Link de redefinição enviado para seu email!", "success");
             closeResetModal();
@@ -132,9 +117,6 @@ function sendPasswordReset() {
                 case 'auth/invalid-email':
                     errorMessage = "Email inválido";
                     break;
-                case 'auth/network-request-failed':
-                    errorMessage = "Erro de conexão";
-                    break;
                 default:
                     errorMessage = error.message || "Erro desconhecido";
             }
@@ -143,16 +125,34 @@ function sendPasswordReset() {
         });
 }
 
+// ==================== FUNÇÃO PARA INICIALIZAR O APP APÓS LOGIN ====================
+function initializeAppAfterLogin() {
+    console.log("🚀 Inicializando app após login...");
+    console.log("currentCompany:", window.currentCompany);
+    console.log("currentUser:", window.currentUser);
+    
+    if (window.currentCompany && window.currentUser) {
+        if (typeof initApp === 'function') {
+            initApp();
+        }
+        if (typeof loadAlerts === 'function') {
+            setTimeout(() => loadAlerts(), 1000);
+        }
+    } else {
+        console.error("❌ currentCompany ou currentUser não definidos!");
+    }
+}
+
 // ==================== VERIFICAÇÃO DE LOGIN ====================
-auth.onAuthStateChanged(async (user) => {
+firebase.auth().onAuthStateChanged(async (user) => {
+    console.log("🔄 Auth state changed:", user ? user.email : "No user");
+    
     if (user) {
-        // Usuário está logado no Firebase Auth
         try {
-            // Mostra loading
             const loginScreen = document.getElementById('login-screen');
             if (loginScreen) {
                 const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-2xl';
+                loadingDiv.className = 'absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-2xl z-50';
                 loadingDiv.innerHTML = `
                     <div class="text-center">
                         <div class="spinner mb-4"></div>
@@ -162,82 +162,69 @@ auth.onAuthStateChanged(async (user) => {
                 loginScreen.appendChild(loadingDiv);
             }
             
-            // Busca informações do usuário no banco
-            const userSnapshot = await db.ref('users/' + user.uid).once('value');
+            // Busca informações do usuário
+            const userSnapshot = await firebase.database().ref('users/' + user.uid).once('value');
             const userData = userSnapshot.val();
             
             if (!userData) {
                 showToast("Usuário não configurado no sistema", "error");
-                await auth.signOut();
+                await firebase.auth().signOut();
                 return;
             }
             
             // Busca informações da empresa
-            const companySnapshot = await db.ref('companies/' + userData.companyId).once('value');
+            const companySnapshot = await firebase.database().ref('companies/' + userData.companyId).once('value');
             const companyData = companySnapshot.val();
             
             if (!companyData) {
                 showToast("Empresa não encontrada", "error");
-                await auth.signOut();
+                await firebase.auth().signOut();
                 return;
             }
             
-            // Verifica se a empresa está ativa
             if (companyData.status !== 'active') {
                 showToast("Empresa inativa. Entre em contato com o suporte.", "error");
-                await auth.signOut();
+                await firebase.auth().signOut();
                 return;
             }
             
-            // Verifica se o trial não expirou
             if (companyData.plan === 'trial' && companyData.trialEnds < Date.now()) {
                 showToast("Período de teste expirado. Entre em contato para renovar.", "error");
-                await auth.signOut();
+                await firebase.auth().signOut();
                 return;
             }
             
-            // Guarda os dados na memória
-            currentUser = {
+            // Guarda os dados na memória (USANDO WINDOW)
+            window.currentUser = {
                 id: user.uid,
                 email: user.email,
                 ...userData
             };
             
-            currentCompany = {
+            window.currentCompany = {
                 id: userData.companyId,
                 ...companyData
             };
             
-            // Registra log de acesso
-            db.ref('logs/' + userData.companyId).push({
-                userId: user.uid,
-                email: user.email,
-                action: 'login',
-                timestamp: Date.now(),
-                userAgent: navigator.userAgent
-            }).catch(error => {
-                console.error("Erro ao registrar log:", error);
-            });
+            console.log("✅ Dados carregados:");
+            console.log("  Company:", window.currentCompany);
+            console.log("  User:", window.currentUser);
             
             // Mostra o aplicativo
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
             
-            // Atualiza o cabeçalho com o nome da empresa
+            // Atualiza o cabeçalho
             const companyHeader = document.getElementById('company-name-header');
             if (companyHeader) {
-                companyHeader.textContent = currentCompany.name;
+                companyHeader.textContent = window.currentCompany.name;
             }
             
-            // Atualiza o título da página
-            document.title = `FrotaForte - ${currentCompany.name}`;
+            document.title = `FrotaForte - ${window.currentCompany.name}`;
             
-            // Inicializa o aplicativo
-            if (typeof initApp === 'function') {
-                initApp();
-            }
+            // INICIALIZA O APP AQUI
+            initializeAppAfterLogin();
             
-            // Mostra mensagem de boas-vindas
             setTimeout(() => {
                 showToast(`Bem-vindo, ${user.email.split('@')[0]}!`, "success");
             }, 500);
@@ -245,78 +232,41 @@ auth.onAuthStateChanged(async (user) => {
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             showToast("Erro ao carregar dados do sistema. Tente novamente.", "error");
-            
-            // Tenta fazer logout
-            try {
-                await auth.signOut();
-            } catch (logoutError) {
-                console.error("Erro ao fazer logout:", logoutError);
-            }
-            
-            // Recarrega a página para limpar estado
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            await firebase.auth().signOut();
+            setTimeout(() => window.location.reload(), 2000);
         } finally {
-            // Remove loading
             const loadingDiv = document.querySelector('#login-screen > div.absolute');
-            if (loadingDiv) {
-                loadingDiv.remove();
-            }
+            if (loadingDiv) loadingDiv.remove();
         }
     } else {
-        // Usuário deslogado
-        currentUser = null;
-        currentCompany = null;
+        window.currentUser = null;
+        window.currentCompany = null;
         
-        // Esconde o aplicativo
         const appContent = document.getElementById('app-content');
-        if (appContent) {
-            appContent.classList.add('hidden');
-        }
+        if (appContent) appContent.classList.add('hidden');
         
-        // Mostra a tela de login
         const loginScreen = document.getElementById('login-screen');
-        if (loginScreen) {
-            loginScreen.classList.remove('hidden');
-        }
-        
-        // Reseta tentativas após um tempo
-        setTimeout(() => {
-            if (!currentUser) {
-                failedAttempts = Math.max(0, failedAttempts - 1);
-            }
-        }, 60000); // A cada minuto reduz uma tentativa
+        if (loginScreen) loginScreen.classList.remove('hidden');
     }
 });
 
 // ==================== LOGOUT ====================
 function logout() {
-    if (currentUser && currentCompany) {
-        // Registra log de logout
-        db.ref('logs/' + currentCompany.id).push({
-            userId: currentUser.id,
-            email: currentUser.email,
+    if (window.currentUser && window.currentCompany) {
+        firebase.database().ref('logs/' + window.currentCompany.id).push({
+            userId: window.currentUser.id,
+            email: window.currentUser.email,
             action: 'logout',
             timestamp: Date.now()
-        }).catch(error => {
-            console.error("Erro ao registrar log de logout:", error);
-        });
+        }).catch(error => console.error("Erro ao registrar log:", error));
     }
     
-    auth.signOut().then(() => {
-        // Limpa dados temporários
-        vehicles = [];
-        units = [];
-        maintenances = [];
-        
-        // Mostra mensagem
+    firebase.auth().signOut().then(() => {
+        window.vehicles = [];
+        window.units = [];
+        window.maintenances = [];
         showToast("Logout realizado com sucesso", "success");
-        
-        // Recarrega após um breve delay
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
+        setTimeout(() => window.location.reload(), 1000);
     }).catch(error => {
         showToast("Erro ao fazer logout: " + error.message, "error");
     });
@@ -324,10 +274,8 @@ function logout() {
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', function() {
-    // Configura o formulário de login
     setupLoginForm();
     
-    // Configura botão de redefinir senha
     const resetEmailInput = document.getElementById('reset-email');
     if (resetEmailInput) {
         resetEmailInput.addEventListener('keypress', function(e) {
@@ -338,13 +286,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Preenche email automaticamente se disponível
     const loginEmailInput = document.getElementById('login-email');
     if (loginEmailInput && localStorage.getItem('lastLoginEmail')) {
         loginEmailInput.value = localStorage.getItem('lastLoginEmail');
     }
     
-    // Salva email ao digitar
     if (loginEmailInput) {
         loginEmailInput.addEventListener('blur', function() {
             if (this.value.trim()) {
@@ -353,26 +299,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Foco automático no campo de email
     setTimeout(() => {
-        if (loginEmailInput && !currentUser) {
+        if (loginEmailInput && !window.currentUser) {
             loginEmailInput.focus();
         }
     }, 300);
 });
 
-// ==================== EXPORTAÇÕES ====================
-// Torna as funções disponíveis globalmente
+// EXPORTAÇÕES
 window.showResetPassword = showResetPassword;
 window.closeResetModal = closeResetModal;
 window.sendPasswordReset = sendPasswordReset;
 window.logout = logout;
-
-// Exporta variáveis para outros módulos
-window.authModule = {
-    currentUser,
-    currentCompany,
-    failedAttempts,
-    MAX_ATTEMPTS,
-    lockedUntil
-};
+window.initializeAppAfterLogin = initializeAppAfterLogin;

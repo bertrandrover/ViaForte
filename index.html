@@ -185,15 +185,20 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="glass-card p-6 lg:col-span-2">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="font-bold text-slate-800 text-lg">Atividade Recente</h2>
+                   <div class="glass-card p-6 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-slate-800 text-lg">Atividade Recente</h2>
+                        <div class="flex gap-2">
+                            <button onclick="openNewMaintenanceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md transition">
+                                <i class="fas fa-wrench mr-2"></i>Nova Manutenção
+                            </button>
                             <button onclick="openNewVehicleModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition">
                                 <i class="fas fa-plus mr-2"></i>Novo Veículo
                             </button>
                         </div>
-                        <div id="recent-list" class="space-y-3"></div>
                     </div>
+                    <div id="recent-list" class="space-y-3"></div>
+                </div>
 
                     <div class="glass-card p-6 bg-slate-50">
                         <div class="flex justify-between items-center mb-4">
@@ -310,81 +315,85 @@
                 <form id="form-vehicle" class="space-y-4">
                     <input type="hidden" id="v-id">
                     
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase">Marca/Modelo *</label>
-                            <input type="text" id="v-model" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Toyota Hilux" required>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase">Situação da Frota</label>
-                            <select id="v-type" onchange="toggleRentalField()" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
-                                <option value="propria">Frota Própria</option>
-                                <option value="locado">Locado</option>
-                            </select>
-                        </div>
-                    </div>
+                    <!-- Dentro do modal-veiculo, substitua TODO o grid do formulário -->
 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Linha 1: Modelo -->
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Marca/Modelo *</label>
+                        <input type="text" id="v-model" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Toyota Hilux" required>
+                    </div>
+                    
+                    <!-- Linha 1: Situação -->
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Situação da Frota</label>
+                        <select id="v-type" onchange="toggleRentalField()" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
+                            <option value="propria">Frota Própria</option>
+                            <option value="locado">Locado</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Locadora (aparece só quando locado) -->
                     <div id="rental-company-group" class="hidden">
                         <label class="text-xs font-bold text-slate-500 uppercase">Nome da Locadora</label>
-                            <input type="text" id="v-rental-co" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Localiza, Movida...">
+                        <input type="text" id="v-rental-co" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Localiza, Movida...">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase">Placa Oficial *</label>
-                            <input type="text" id="v-plate-off" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none font-mono" placeholder="ABC-1234" required>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase">Placa Reservada (Opcional)</label>
-                            <input type="text" id="v-plate-res" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none font-mono" placeholder="---">
-                        </div>
+                    
+                    <!-- Linha 2: Placa Oficial -->
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Placa Oficial *</label>
+                        <input type="text" id="v-plate-off" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none font-mono" placeholder="ABC1234" required>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- COLUNA 1: Unidade (2/3 da largura) -->
-                        <div class="md:col-span-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Unidade Operacional</label>
-                            <div class="flex gap-2 mt-1">
-                                <select id="v-unit-select" class="flex-1 p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
-                                    <option value="">Selecione a Unidade...</option>
-                                </select>
-                                <!-- BOTÃO VERDE - AGORA COM ESPAÇO ADEQUADO -->
-                                <button type="button" onclick="openQuickUnitModal()" 
-                                        class="flex-shrink-0 bg-emerald-500 text-white p-3 rounded-lg hover:bg-emerald-600 transition-all duration-200 quick-unit-btn" 
-                                        title="Criar nova unidade">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                            <p class="text-[10px] text-slate-400 mt-1">Ou crie uma nova unidade rapidamente</p>
+                    
+                    <!-- Linha 2: Placa Reservada -->
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Placa Reservada (Opcional)</label>
+                        <input type="text" id="v-plate-res" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none font-mono" placeholder="---">
+                    </div>
+                    
+                    <!-- Linha 3: Unidade (largura total) -->
+                    <div class="md:col-span-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Unidade Operacional</label>
+                        <div class="flex gap-2">
+                            <select id="v-unit-select" class="flex-1 p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
+                                <option value="">Selecione a Unidade...</option>
+                            </select>
+                            <button type="button" onclick="openQuickUnitModal()" 
+                                    class="bg-emerald-500 text-white px-5 py-3 rounded-lg hover:bg-emerald-600 transition-all duration-200 whitespace-nowrap" 
+                                    title="Criar nova unidade">
+                                <i class="fas fa-plus mr-1"></i> Nova
+                            </button>
                         </div>
-                        
-                        <!-- COLUNA 2: KM Atual (1/3 da largura) -->
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase">KM Atual *</label>
-                            <input type="number" id="v-km" 
-                                class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none mt-1" 
-                                placeholder="0" 
-                                required 
-                                min="0">
-                        </div>
-                        
-                        <!-- COLUNA 3: Checkbox (linha completa) -->
-                        <div class="md:col-span-3">
-                            <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                <input type="checkbox" id="v-all-maintenance-done" 
-                                    class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
-                                <div>
-                                    <label for="v-all-maintenance-done" class="text-sm font-medium text-slate-700 cursor-pointer">
-                                        <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
-                                        Todas manutenções realizadas até o momento
-                                    </label>
-                                    <p class="text-xs text-slate-500 mt-1">
-                                        Marque se o veículo já tem histórico completo de manutenções
-                                    </p>
-                                </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Clique em "Nova" para criar uma unidade rapidamente</p>
+                    </div>
+                    
+                    <!-- Linha 4: KM Atual -->
+                    <div class="md:col-span-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase">KM Atual *</label>
+                        <input type="number" id="v-km" 
+                            class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" 
+                            placeholder="0" 
+                            required 
+                            min="0">
+                    </div>
+                    
+                    <!-- Linha 5: Checkbox -->
+                    <div class="md:col-span-2">
+                        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <input type="checkbox" id="v-all-maintenance-done" 
+                                class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                            <div>
+                                <label for="v-all-maintenance-done" class="text-sm font-medium text-slate-700 cursor-pointer">
+                                    <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                                    Todas manutenções realizadas até o momento
+                                </label>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    Marque se o veículo já tem histórico completo de manutenções
+                                </p>
                             </div>
                         </div>
                     </div>
+                </div>
                 </form>
 
                 <div id="content-manutencao" class="hidden space-y-6">
@@ -525,19 +534,85 @@
         </div>
     </div>
 
-    <!-- ==================== SCRIPTS ==================== -->
-    <!-- Firebase -->
+    <!-- ==================== MODAL MANUTENÇÃO ==================== -->
+<div id="modal-manutencao" class="fixed inset-0 modal-overlay hidden z-[6000] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 fade-in">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h3 class="text-xl font-bold text-slate-800">Nova Manutenção</h3>
+            <button onclick="closeModal('modal-manutencao')" class="text-slate-400 hover:text-red-500 transition">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">Veículo *</label>
+                <div id="m-vehicle-display" class="bg-slate-50 p-3 rounded-lg border">
+                    <div class="relative">
+                        <input type="text" id="m-vehicle-search" 
+                            class="w-full bg-transparent outline-none" 
+                            placeholder="🔍 Digite a placa ou modelo do veículo..."
+                            autocomplete="off">
+                        <div id="m-vehicle-results" class="absolute z-50 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-48 overflow-y-auto left-0"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="m-vehicle-id">
+            </div>
+            
+            <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">Tipo de Serviço *</label>
+                <select id="m-type" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
+                    <option value="oleo">🛢️ Troca de Óleo</option>
+                    <option value="revisao">🔧 Revisão Geral</option>
+                    <option value="pneus">🚗 Pneus</option>
+                    <option value="freios">🛑 Freios</option>
+                    <option value="outro">✨ Outro</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">Descrição *</label>
+                <input type="text" id="m-desc" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Troca de óleo e filtros">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Data *</label>
+                    <input type="date" id="m-date" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">KM Atual</label>
+                    <input type="number" id="m-km" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="0">
+                </div>
+            </div>
+            
+            <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">Local</label>
+                <input type="text" id="m-location" class="w-full p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none" placeholder="Ex: Oficina Central">
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeModal('modal-manutencao')" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-300">
+                    Cancelar
+                </button>
+                <button onclick="addMaintenance()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">
+                    <i class="fas fa-save mr-2"></i> Salvar Manutenção
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+           <!-- ==================== SCRIPTS ==================== -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     
-    <!-- Nossos Arquivos JavaScript (IMPORTANTE: ORDEM CORRETA!) -->
     <script src="js/firebase-config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/db.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
-    <!-- ARQUIVO DOS ALERTAS (NOVO) -->
     <script src="js/alerts.js"></script>
 
 </body>

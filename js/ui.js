@@ -2,8 +2,9 @@
 
 // ==================== INTERFACE E MODAIS ====================
 
-// Variável global para o alvo de exclusão
-let deleteTarget = null;
+if (typeof window.deleteTarget === 'undefined') {
+    window.deleteTarget = null;
+}
 
 // ==================== MODAL VEÍCULO ====================
 function openNewVehicleModal() {
@@ -14,7 +15,6 @@ function openNewVehicleModal() {
     switchTab('cadastro');
     openModal('modal-veiculo');
     
-    // Foco no primeiro campo
     setTimeout(() => {
         const firstInput = document.getElementById('v-model');
         if (firstInput) firstInput.focus();
@@ -24,13 +24,12 @@ function openNewVehicleModal() {
 function openEditVehicleModal(id) {
     if (!id) return;
     
-    const vehicle = vehicles.find(v => v.id === id);
+    const vehicle = window.vehicles.find(v => v.id === id);
     if (!vehicle) {
         showToast("Veículo não encontrado", "error");
         return;
     }
     
-    // Preenche o formulário
     document.getElementById('v-id').value = vehicle.id;
     document.getElementById('v-model').value = vehicle.modelo || '';
     document.getElementById('v-type').value = vehicle.type || 'propria';
@@ -46,7 +45,6 @@ function openEditVehicleModal(id) {
     document.getElementById('modal-vehicle-subtitle').textContent = `${vehicle.modelo || 'Veículo'} - ${vehicle.plateOff || 'Sem placa'}`;
     document.getElementById('tab-manutencao').classList.remove('hidden');
     
-    // Carrega manutenções deste veículo
     renderMaintenanceList(vehicle.id);
     
     openModal('modal-veiculo');
@@ -100,7 +98,7 @@ function renderMaintenanceList(vehicleId) {
     const listEl = document.getElementById('maintenance-list');
     if (!listEl) return;
     
-    const vehicleMaintenances = maintenances.filter(m => m.vehicleId === vehicleId);
+    const vehicleMaintenances = window.maintenances.filter(m => m.vehicleId === vehicleId);
     
     if (vehicleMaintenances.length === 0) {
         listEl.innerHTML = `
@@ -113,7 +111,6 @@ function renderMaintenanceList(vehicleId) {
         return;
     }
     
-    // Ordena por data (mais recente primeiro)
     vehicleMaintenances.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
     
     listEl.innerHTML = vehicleMaintenances.map(m => {
@@ -129,22 +126,10 @@ function renderMaintenanceList(vehicleId) {
                         <p class="text-sm font-bold text-slate-800">${m.description || 'Sem descrição'}</p>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500">
-                        <span class="flex items-center gap-1">
-                            <i class="far fa-calendar"></i> ${date}
-                        </span>
-                        ${m.location ? `
-                            <span class="flex items-center gap-1">
-                                <i class="fas fa-map-marker-alt text-blue-500"></i> ${m.location}
-                            </span>
-                        ` : ''}
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-tachometer-alt text-amber-500"></i> ${kmText}
-                        </span>
-                        ${m.createdBy ? `
-                            <span class="flex items-center gap-1">
-                                <i class="fas fa-user text-purple-500"></i> ${m.createdBy.split('@')[0]}
-                            </span>
-                        ` : ''}
+                        <span class="flex items-center gap-1"><i class="far fa-calendar"></i> ${date}</span>
+                        ${m.location ? `<span class="flex items-center gap-1"><i class="fas fa-map-marker-alt text-blue-500"></i> ${m.location}</span>` : ''}
+                        <span class="flex items-center gap-1"><i class="fas fa-tachometer-alt text-amber-500"></i> ${kmText}</span>
+                        ${m.createdBy ? `<span class="flex items-center gap-1"><i class="fas fa-user text-purple-500"></i> ${m.createdBy.split('@')[0]}</span>` : ''}
                     </div>
                 </div>
                 <button onclick="deleteMaintenance('${m.id}')" class="text-red-400 hover:text-red-600 text-sm ml-2 p-2 rounded-full hover:bg-red-50 transition" title="Excluir">
@@ -163,17 +148,6 @@ function getTypeColor(type) {
         case 'freios': return 'bg-red-100 text-red-700';
         default: return 'bg-purple-100 text-purple-700';
     }
-}
-
-function getMaintenanceTypeLabel(type) {
-    const labels = {
-        'oleo': '🛢️ Óleo',
-        'revisao': '🔧 Revisão',
-        'pneus': '🚗 Pneus',
-        'freios': '🛑 Freios',
-        'outro': '✨ Outro'
-    };
-    return labels[type] || '✨ Outro';
 }
 
 function addMaintenance() {
@@ -195,16 +169,13 @@ function addMaintenance() {
         return;
     }
     
-    // Valida data
     if (new Date(date) > new Date()) {
         showToast("Data não pode ser futura", "error");
         return;
     }
     
-    // Busca o veículo atual
-    const currentVehicle = vehicles.find(v => v.id === vehicleId);
+    const currentVehicle = window.vehicles.find(v => v.id === vehicleId);
     
-    // Prepara dados da manutenção
     const maintenanceData = {
         vehicleId: vehicleId,
         type: type,
@@ -212,29 +183,30 @@ function addMaintenance() {
         date: date,
         km: maintKm,
         location: location,
-        createdBy: currentUser?.email || 'sistema',
+        createdBy: window.currentUser?.email || 'sistema',
         createdAt: Date.now()
     };
     
-    // Mostra loading
     const btn = document.querySelector('#content-manutencao button[onclick="addMaintenance()"]');
+    if (!btn) {
+        showToast("Botão não encontrado", "error");
+        return;
+    }
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...';
     btn.disabled = true;
     
-    // Salva a manutenção
     saveMaintenance(maintenanceData)
         .then(() => {
-            // Atualiza KM do veículo se necessário
             if (maintKm > (currentVehicle?.km || 0)) {
                 const updateData = {
                     id: vehicleId,
                     km: maintKm,
                     lastUpdate: Date.now(),
                     updatedAt: Date.now(),
-                    updatedBy: currentUser?.email
+                    updatedBy: window.currentUser?.email
                 };
-                
                 return saveVehicleToDB(updateData);
             }
             return Promise.resolve();
@@ -242,21 +214,21 @@ function addMaintenance() {
         .then(() => {
             showToast("Manutenção registrada com sucesso!", "success");
             
-            // Limpa os campos
             document.getElementById('m-desc').value = '';
             document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('m-km').value = '';
             document.getElementById('m-location').value = '';
             document.getElementById('m-type').value = 'outro';
             
-            // Atualiza a lista e o campo KM
             setTimeout(() => {
                 renderMaintenanceList(vehicleId);
-                // Atualiza o KM no formulário
-                const currentVehicleUpdated = vehicles.find(v => v.id === vehicleId);
+                const currentVehicleUpdated = window.vehicles.find(v => v.id === vehicleId);
                 if (currentVehicleUpdated && currentVehicleUpdated.km) {
                     document.getElementById('v-km').value = currentVehicleUpdated.km;
                 }
+                // Força atualização do dashboard
+                if (typeof renderDashboard === 'function') renderDashboard();
+                if (typeof updateAlertsDisplay === 'function') updateAlertsDisplay();
             }, 500);
         })
         .catch(error => {
@@ -264,7 +236,6 @@ function addMaintenance() {
             showToast("Erro ao salvar manutenção: " + error.message, "error");
         })
         .finally(() => {
-            // Restaura botão
             btn.innerHTML = originalText;
             btn.disabled = false;
         });
@@ -291,12 +262,11 @@ function saveVehicle() {
     const id = document.getElementById('v-id').value;
     const unitSelect = document.getElementById('v-unit-select');
     
-    // Busca unidade selecionada
     let unitName = 'Sem Unidade';
     let unitId = '';
     
     if (unitSelect && unitSelect.value) {
-        const selectedUnit = units.find(u => u.id === unitSelect.value);
+        const selectedUnit = window.units.find(u => u.id === unitSelect.value);
         if (selectedUnit) {
             unitName = selectedUnit.name;
             unitId = selectedUnit.id;
@@ -319,10 +289,9 @@ function saveVehicle() {
         maintenanceBaselineDate: new Date().toISOString().split('T')[0],
         lastUpdate: Date.now(),
         updatedAt: Date.now(),
-        updatedBy: currentUser?.email
+        updatedBy: window.currentUser?.email
     };
     
-    // Validação básica
     if (!vehicleData.modelo || !vehicleData.plateOff) {
         showToast("Preencha Modelo e Placa Oficial", "error");
         return;
@@ -333,8 +302,7 @@ function saveVehicle() {
         return;
     }
     
-    // Verifica se placa já existe (exceto se estiver editando o mesmo veículo)
-    const existingVehicle = vehicles.find(v => 
+    const existingVehicle = window.vehicles.find(v => 
         v.plateOff === vehicleData.plateOff && 
         v.id !== id
     );
@@ -344,33 +312,33 @@ function saveVehicle() {
         return;
     }
     
-    // Mostra loading no botão
     const btn = document.querySelector('#footer-cadastro button[onclick="saveVehicle()"]');
-    if (!btn) return;
+    if (!btn) {
+        showToast("Botão não encontrado", "error");
+        return;
+    }
     
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
     btn.disabled = true;
     
-    // Salva no banco
-    if (typeof window.saveVehicleToDB === 'function') {
-        window.saveVehicleToDB(vehicleData)
-            .then(() => {
-                showToast(id ? "Veículo atualizado!" : "Veículo criado!");
-                closeModal('modal-veiculo');
-            })
-            .catch(error => {
-                showToast("Erro ao salvar: " + error.message, "error");
-            })
-            .finally(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            });
-    } else {
-        showToast("Erro: Função de salvamento não encontrada", "error");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
+    saveVehicleToDB(vehicleData)
+        .then(() => {
+            showToast(id ? "Veículo atualizado!" : "Veículo criado!");
+            closeModal('modal-veiculo');
+            // Força atualização das interfaces
+            setTimeout(() => {
+                if (typeof renderDashboard === 'function') renderDashboard();
+                if (typeof updateAlertsDisplay === 'function') updateAlertsDisplay();
+            }, 500);
+        })
+        .catch(error => {
+            showToast("Erro ao salvar: " + error.message, "error");
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
 }
 
 // ==================== MODAL UNIDADE RÁPIDA ====================
@@ -394,7 +362,7 @@ function saveQuickUnit() {
         return;
     }
     
-    const existingUnit = units.find(u => u.name.toLowerCase() === name.toLowerCase());
+    const existingUnit = window.units.find(u => u.name.toLowerCase() === name.toLowerCase());
     if (existingUnit) {
         showToast(`Unidade "${name}" já existe`, "error");
         const select = document.getElementById('v-unit-select');
@@ -406,6 +374,8 @@ function saveQuickUnit() {
     const unitData = { name: name, city: city };
     
     const btn = document.querySelector('#modal-unidade-rapida button[onclick="saveQuickUnit()"]');
+    if (!btn) return;
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Criando...';
     btn.disabled = true;
@@ -417,7 +387,7 @@ function saveQuickUnit() {
             setTimeout(() => {
                 updateUnitSelect();
                 const select = document.getElementById('v-unit-select');
-                const newUnit = units.find(u => u.name === name);
+                const newUnit = window.units.find(u => u.name === name);
                 if (newUnit && select) select.value = newUnit.id;
             }, 500);
         })
@@ -439,7 +409,7 @@ function openUnitModal(id = null) {
     document.getElementById('u-id').value = '';
     
     if (id) {
-        const unit = units.find(u => u.id === id);
+        const unit = window.units.find(u => u.id === id);
         if (unit) {
             document.getElementById('u-id').value = unit.id;
             document.getElementById('u-name').value = unit.name;
@@ -468,7 +438,7 @@ function saveUnitForm() {
         return;
     }
     
-    const existingUnit = units.find(u => 
+    const existingUnit = window.units.find(u => 
         u.name.toLowerCase() === name.toLowerCase() && 
         u.id !== id
     );
@@ -481,6 +451,8 @@ function saveUnitForm() {
     const unitData = { id: id || null, name: name, city: city };
     
     const btn = document.querySelector('#form-unit button[type="submit"]');
+    if (!btn) return;
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
     btn.disabled = true;
@@ -489,6 +461,10 @@ function saveUnitForm() {
         .then(() => {
             showToast(id ? "Unidade atualizada!" : "Unidade criada!");
             closeModal('modal-unidade');
+            setTimeout(() => {
+                if (typeof renderDashboard === 'function') renderDashboard();
+                if (typeof renderUnitsPage === 'function') renderUnitsPage();
+            }, 500);
         })
         .catch(error => {
             showToast("Erro ao salvar: " + error.message, "error");
@@ -506,40 +482,42 @@ function updateUnitSelect() {
     const currentValue = select.value;
     select.innerHTML = '<option value="">Selecione a Unidade...</option>';
     
-    units.forEach(unit => {
+    window.units.forEach(unit => {
         const option = document.createElement('option');
         option.value = unit.id;
         option.textContent = `${unit.name} ${unit.city ? `- ${unit.city}` : ''}`;
         select.appendChild(option);
     });
     
-    if (currentValue && units.some(u => u.id === currentValue)) {
+    if (currentValue && window.units.some(u => u.id === currentValue)) {
         select.value = currentValue;
     }
 }
 
 // ==================== CONFIRMAÇÃO DE EXCLUSÃO ====================
 function confirmDeleteVehicle(vehicleId, vehicleName, plate) {
-    deleteTarget = { type: 'vehicle', id: vehicleId, name: vehicleName, plate: plate };
+    window.deleteTarget = { type: 'vehicle', id: vehicleId, name: vehicleName, plate: plate };
     document.getElementById('confirm-message').innerHTML = `Excluir o veículo <strong>"${vehicleName}"</strong> - ${plate}?<br><small class="text-red-500">Todas as manutenções também serão excluídas.</small>`;
     openModal('modal-confirm');
 }
 
 function confirmDeleteUnit(unitId, unitName) {
-    deleteTarget = { type: 'unit', id: unitId, name: unitName };
-    document.getElementById('confirm-message').innerHTML = `Excluir a unidade <strong>"${unitName}"</strong>?`;
+    window.deleteTarget = { type: 'unit', id: unitId, name: unitName };
+    document.getElementById('confirm-message').innerHTML = `Excluir a unidade <strong>"${unitName}"</strong>?<br><small class="text-red-500">A unidade precisa estar sem veículos vinculados.</small>`;
     openModal('modal-confirm');
 }
 
 function confirmDeleteAction() {
-    if (!deleteTarget) {
+    if (!window.deleteTarget) {
         closeModal('modal-confirm');
         return;
     }
     
-    const { type, id, name } = deleteTarget;
+    const { type, id, name } = window.deleteTarget;
     
     const confirmBtn = document.getElementById('btn-confirm-delete');
+    if (!confirmBtn) return;
+    
     const originalText = confirmBtn.innerHTML;
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     confirmBtn.disabled = true;
@@ -550,6 +528,12 @@ function confirmDeleteAction() {
         .then(() => {
             showToast(`${type === 'unit' ? 'Unidade' : 'Veículo'} "${name}" excluído`, "success");
             closeModal('modal-confirm');
+            setTimeout(() => {
+                if (typeof renderDashboard === 'function') renderDashboard();
+                if (typeof renderVehicles === 'function') renderVehicles();
+                if (typeof renderUnitsPage === 'function') renderUnitsPage();
+                if (typeof updateAlertsDisplay === 'function') updateAlertsDisplay();
+            }, 500);
         })
         .catch(error => {
             showToast("Erro ao excluir: " + error.message, "error");
@@ -560,32 +544,32 @@ function confirmDeleteAction() {
             confirmBtn.disabled = false;
         });
     
-    deleteTarget = null;
+    window.deleteTarget = null;
 }
 
 // ==================== CONFIGURAÇÕES ====================
 function updateCompanyInfo() {
-    if (!currentCompany) return;
+    if (!window.currentCompany) return;
     
     const companyNameEl = document.getElementById('cfg-company-name');
     const companyPlanEl = document.getElementById('cfg-company-plan');
     const companyStatusEl = document.getElementById('cfg-company-status');
     
-    if (companyNameEl) companyNameEl.textContent = currentCompany.name;
+    if (companyNameEl) companyNameEl.textContent = window.currentCompany.name;
     if (companyPlanEl) {
-        companyPlanEl.textContent = currentCompany.plan || 'trial';
-        companyPlanEl.className = currentCompany.plan === 'premium' 
+        companyPlanEl.textContent = window.currentCompany.plan || 'trial';
+        companyPlanEl.className = window.currentCompany.plan === 'premium' 
             ? 'bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs'
             : 'bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs';
     }
     if (companyStatusEl) {
-        companyStatusEl.textContent = currentCompany.status || 'active';
-        companyStatusEl.className = currentCompany.status === 'active'
+        companyStatusEl.textContent = window.currentCompany.status || 'active';
+        companyStatusEl.className = window.currentCompany.status === 'active'
             ? 'text-emerald-600 font-bold'
             : 'text-red-600 font-bold';
     }
     
-    const savedEmail = localStorage.getItem('managerEmail_' + currentCompany.id);
+    const savedEmail = localStorage.getItem('managerEmail_' + window.currentCompany.id);
     const emailInput = document.getElementById('cfg-manager-email');
     if (emailInput && savedEmail) {
         emailInput.value = savedEmail;
@@ -593,7 +577,7 @@ function updateCompanyInfo() {
 }
 
 function saveConfigs() {
-    if (!currentCompany) return;
+    if (!window.currentCompany) return;
     
     const managerEmail = document.getElementById('cfg-manager-email').value.trim();
     
@@ -605,13 +589,15 @@ function saveConfigs() {
     const settings = { managerEmail: managerEmail };
     
     const btn = document.querySelector('#page-config button[onclick="saveConfigs()"]');
+    if (!btn) return;
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
     btn.disabled = true;
     
     saveSettings(settings)
         .then(() => {
-            localStorage.setItem('managerEmail_' + currentCompany.id, managerEmail);
+            localStorage.setItem('managerEmail_' + window.currentCompany.id, managerEmail);
             showToast("Configurações salvas com sucesso!", "success");
         })
         .catch(error => {
@@ -629,13 +615,13 @@ function saveConfigs() {
 function openViewVehicleModal(id) {
     if (!id) return;
     
-    const vehicle = vehicles.find(v => v.id === id);
+    const vehicle = window.vehicles.find(v => v.id === id);
     if (!vehicle) {
         showToast("Veículo não encontrado", "error");
         return;
     }
     
-    const vehicleMaintenances = maintenances.filter(m => m.vehicleId === id);
+    const vehicleMaintenances = window.maintenances.filter(m => m.vehicleId === id);
     const lastMaintenance = vehicleMaintenances.length > 0 
         ? vehicleMaintenances.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0))[0]
         : null;
@@ -659,17 +645,14 @@ function openViewVehicleModal(id) {
                             <p class="text-xs text-blue-500 font-bold uppercase">Marca/Modelo</p>
                             <p class="text-lg font-bold text-slate-800">${vehicle.modelo || 'Não informado'}</p>
                         </div>
-                        
                         <div class="bg-blue-50 p-4 rounded-xl">
                             <p class="text-xs text-blue-500 font-bold uppercase">Placa Oficial</p>
                             <p class="text-lg font-bold text-slate-800 font-mono">${vehicle.plateOff || '---'}</p>
                         </div>
-                        
                         <div class="bg-purple-50 p-4 rounded-xl">
                             <p class="text-xs text-purple-500 font-bold uppercase">Placa Reservada</p>
                             <p class="text-lg font-bold text-slate-800 font-mono">${vehicle.plateRes || '<span class="text-slate-400 text-sm">Não cadastrada</span>'}</p>
                         </div>
-                        
                         <div class="bg-slate-50 p-4 rounded-xl">
                             <p class="text-xs text-slate-500 font-bold uppercase">Tipo</p>
                             <p class="text-lg font-bold ${vehicle.type === 'locado' ? 'text-amber-600' : 'text-emerald-600'}">
@@ -677,12 +660,10 @@ function openViewVehicleModal(id) {
                                 ${vehicle.rentalCo ? ` (${vehicle.rentalCo})` : ''}
                             </p>
                         </div>
-                        
                         <div class="bg-slate-50 p-4 rounded-xl">
                             <p class="text-xs text-slate-500 font-bold uppercase">KM Atual</p>
                             <p class="text-lg font-bold text-slate-800">${(vehicle.km || 0).toLocaleString()} KM</p>
                         </div>
-                        
                         <div class="${vehicle.allMaintenanceDone ? 'bg-emerald-50' : 'bg-amber-50'} p-4 rounded-xl">
                             <p class="text-xs ${vehicle.allMaintenanceDone ? 'text-emerald-500' : 'text-amber-500'} font-bold uppercase">Status Manutenções</p>
                             <p class="text-lg font-bold ${vehicle.allMaintenanceDone ? 'text-emerald-600' : 'text-amber-600'}">
@@ -737,15 +718,32 @@ function closeViewVehicleModal() {
 }
 
 // ==================== EXPORTAR DADOS ====================
-function exportToCSV() {
-    if (vehicles.length === 0) {
+function exportToCSV(data, filename) {
+    if (!data || data.length === 0) return;
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+function exportVehiclesToCSV() {
+    if (window.vehicles.length === 0) {
         showToast("Não há dados para exportar", "warning");
         return;
     }
     
     const headers = ['ID', 'Modelo', 'Tipo', 'Locadora', 'Placa Oficial', 'Placa Reservada', 'Unidade', 'KM Atual', 'Manutenções Realizadas', 'Última Atualização', 'Data Cadastro'];
     
-    const rows = vehicles.map(vehicle => {
+    const rows = window.vehicles.map(vehicle => {
         const lastUpdate = vehicle.lastUpdate || vehicle.updatedAt || vehicle.createdAt;
         const dateStr = lastUpdate ? new Date(lastUpdate).toLocaleDateString('pt-BR') : '';
         const createdAtStr = vehicle.createdAt ? new Date(vehicle.createdAt).toLocaleDateString('pt-BR') : '';
@@ -776,17 +774,174 @@ function exportToCSV() {
     showToast("Exportação em CSV iniciada!", "success");
 }
 
-// ==================== FUNÇÕES GLOBAIS ADICIONAIS ====================
+// ==================== NOVA MANUTENÇÃO COM BUSCA POR PLACA ====================
 function openNewMaintenanceModal(vehicleId = null) {
+    console.log("🔧 Abrindo modal de manutenção", vehicleId);
+    
+    // Limpa os campos
+    document.getElementById('m-desc').value = '';
+    document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('m-km').value = '';
+    document.getElementById('m-location').value = '';
+    document.getElementById('m-type').value = 'oleo';
+    
     if (vehicleId) {
-        const vehicle = vehicles.find(v => v.id === vehicleId);
+        // Veio com ID específico (ex: clicou no botão de um veículo)
+        const vehicle = window.vehicles.find(v => v.id === vehicleId);
         if (vehicle) {
-            document.getElementById('m-vehicle-id').value = vehicleId;
-            document.getElementById('m-vehicle-display').textContent = `${vehicle.modelo || 'Veículo'} - ${vehicle.plateOff || ''}`;
+            document.getElementById('m-vehicle-id').value = vehicle.id;
+            document.getElementById('m-vehicle-display').innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span><strong>${vehicle.modelo || 'Veículo'}</strong> - ${vehicle.plateOff || 'Sem placa'}</span>
+                    <span class="text-xs text-slate-500">${(vehicle.km || 0).toLocaleString()} KM</span>
+                </div>
+                <button type="button" onclick="resetMaintenanceVehicle()" 
+                        class="text-xs text-blue-500 mt-1 hover:text-blue-700">
+                    <i class="fas fa-exchange-alt mr-1"></i>Trocar veículo
+                </button>
+            `;
             document.getElementById('m-km').value = vehicle.km || 0;
         }
+    } else {
+        // Abriu sem veículo selecionado - mostra buscador por PLACA
+        document.getElementById('m-vehicle-id').value = '';
+        document.getElementById('m-vehicle-display').innerHTML = `
+            <div class="relative">
+                <div class="flex gap-2">
+                    <input type="text" id="m-vehicle-search" 
+                        class="flex-1 p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none uppercase" 
+                        placeholder="🔍 Digite a PLACA do veículo (ex: ABC1234)"
+                        autocomplete="off">
+                    <button type="button" onclick="searchVehicleByPlate()" 
+                        class="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="m-vehicle-results" class="absolute z-50 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-48 overflow-y-auto"></div>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-2">Digite a placa e clique na lupa para buscar</p>
+        `;
+        
+        // Configura a busca ao pressionar Enter
+        setTimeout(() => {
+            const searchInput = document.getElementById('m-vehicle-search');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchVehicleByPlate();
+                    }
+                });
+            }
+        }, 100);
     }
+    
     openModal('modal-manutencao');
+}
+
+function searchVehicleByPlate() {
+    const searchInput = document.getElementById('m-vehicle-search');
+    if (!searchInput) return;
+    
+    const plate = searchInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const resultsDiv = document.getElementById('m-vehicle-results');
+    
+    if (!plate) {
+        showToast("Digite uma placa para buscar", "warning");
+        return;
+    }
+    
+    // Busca exata por placa oficial
+    const vehicle = window.vehicles.find(v => v.plateOff === plate);
+    
+    if (!vehicle) {
+        resultsDiv.innerHTML = `
+            <div class="p-3 text-center">
+                <div class="text-red-500 font-bold">Veículo não encontrado!</div>
+                <div class="text-sm text-slate-500 mt-1">Placa "${plate}" não cadastrada</div>
+                <button onclick="closeModal('modal-manutencao'); openNewVehicleModal();" 
+                    class="mt-3 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                    <i class="fas fa-plus mr-1"></i> Cadastrar novo veículo
+                </button>
+            </div>
+        `;
+        resultsDiv.classList.remove('hidden');
+    } else {
+        resultsDiv.innerHTML = `
+            <div class="p-3 hover:bg-blue-50 cursor-pointer" 
+                 onclick="selectVehicleForMaintenance('${vehicle.id}', '${vehicle.modelo || 'Veículo'}', '${vehicle.plateOff || ''}', ${vehicle.km || 0})">
+                <div class="font-bold text-slate-800">${vehicle.modelo || 'Veículo'}</div>
+                <div class="text-sm text-slate-500">Placa: ${vehicle.plateOff} • ${(vehicle.km || 0).toLocaleString()} KM</div>
+                <div class="text-xs text-slate-400">Unidade: ${vehicle.unitName || 'Sem unidade'}</div>
+            </div>
+        `;
+        resultsDiv.classList.remove('hidden');
+        
+        // Fecha o dropdown após selecionar (com delay para o clique)
+        setTimeout(() => {
+            const resultItem = resultsDiv.querySelector('.cursor-pointer');
+            if (resultItem) {
+                resultItem.click();
+            }
+        }, 100);
+    }
+}
+
+function selectVehicleForMaintenance(id, modelo, placa, km) {
+    document.getElementById('m-vehicle-id').value = id;
+    document.getElementById('m-vehicle-display').innerHTML = `
+        <div class="flex justify-between items-center">
+            <span><strong>${modelo}</strong> - ${placa}</span>
+            <span class="text-xs text-slate-500">${km.toLocaleString()} KM</span>
+        </div>
+        <button type="button" onclick="resetMaintenanceVehicle()" 
+                class="text-xs text-blue-500 mt-1 hover:text-blue-700">
+            <i class="fas fa-exchange-alt mr-1"></i>Trocar veículo
+        </button>
+    `;
+    document.getElementById('m-km').value = km || 0;
+    
+    // Fecha o dropdown
+    const resultsDiv = document.getElementById('m-vehicle-results');
+    if (resultsDiv) resultsDiv.classList.add('hidden');
+    
+    // Limpa o campo de busca
+    const searchInput = document.getElementById('m-vehicle-search');
+    if (searchInput) searchInput.value = '';
+}
+
+function resetMaintenanceVehicle() {
+    document.getElementById('m-vehicle-id').value = '';
+    document.getElementById('m-vehicle-display').innerHTML = `
+        <div class="relative">
+            <div class="flex gap-2">
+                <input type="text" id="m-vehicle-search" 
+                    class="flex-1 p-3 bg-slate-50 border rounded-lg focus:border-blue-500 outline-none uppercase" 
+                    placeholder="🔍 Digite a PLACA do veículo (ex: ABC1234)"
+                    autocomplete="off">
+                <button type="button" onclick="searchVehicleByPlate()" 
+                    class="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div id="m-vehicle-results" class="absolute z-50 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-48 overflow-y-auto"></div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2">Digite a placa e clique na lupa para buscar</p>
+    `;
+    document.getElementById('m-km').value = '';
+    
+    // Reconfigura a busca
+    setTimeout(() => {
+        const searchInput = document.getElementById('m-vehicle-search');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchVehicleByPlate();
+                }
+            });
+        }
+    }, 100);
 }
 
 function scheduleMaintenance(vehicleId) {
@@ -804,8 +959,8 @@ function scheduleMaintenance(vehicleId) {
 }
 
 function exportMaintenanceReport() {
-    const data = maintenances.map(m => {
-        const vehicle = vehicles.find(v => v.id === m.vehicleId);
+    const data = window.maintenances.map(m => {
+        const vehicle = window.vehicles.find(v => v.id === m.vehicleId);
         return {
             'Data': m.date || '',
             'Veículo': vehicle?.modelo || '',
@@ -814,8 +969,7 @@ function exportMaintenanceReport() {
             'Tipo': getMaintenanceTypeLabel(m.type),
             'Descrição': m.description || '',
             'KM': m.km || '',
-            'Valor': m.cost || '',
-            'Responsável': m.responsible || ''
+            'Responsável': m.createdBy || ''
         };
     });
     
@@ -827,31 +981,16 @@ function exportMaintenanceReport() {
     }
 }
 
-// ==================== EXPORTAÇÕES ====================
-window.openNewVehicleModal = openNewVehicleModal;
-window.openEditVehicleModal = openEditVehicleModal;
-window.renderMaintenanceList = renderMaintenanceList;
-window.addMaintenance = addMaintenance;
-window.deleteMaintenance = deleteMaintenance;
-window.openQuickUnitModal = openQuickUnitModal;
-window.saveQuickUnit = saveQuickUnit;
-window.openUnitModal = openUnitModal;
-window.saveUnitForm = saveUnitForm;
-window.confirmDeleteVehicle = confirmDeleteVehicle;
-window.confirmDeleteUnit = confirmDeleteUnit;
-window.confirmDeleteAction = confirmDeleteAction;
-window.updateCompanyInfo = updateCompanyInfo;
-window.saveConfigs = saveConfigs;
-window.saveVehicle = saveVehicle;
-window.toggleRentalField = toggleRentalField;
-window.switchTab = switchTab;
-window.updateUnitSelect = updateUnitSelect;
-window.openViewVehicleModal = openViewVehicleModal;
-window.closeViewVehicleModal = closeViewVehicleModal;
-window.exportToCSV = exportToCSV;
-window.openNewMaintenanceModal = openNewMaintenanceModal;
-window.scheduleMaintenance = scheduleMaintenance;
-window.exportMaintenanceReport = exportMaintenanceReport;
+function getMaintenanceTypeLabel(type) {
+    const labels = {
+        'oleo': 'Troca de Óleo',
+        'revisao': 'Revisão Geral',
+        'pneus': 'Pneus',
+        'freios': 'Freios',
+        'outro': 'Outro'
+    };
+    return labels[type] || 'Outro';
+}
 
 // ==================== INICIALIZAÇÃO DE EVENTOS ====================
 document.addEventListener('DOMContentLoaded', function() {
@@ -897,7 +1036,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Formatação de placa simplificada
     const vPlateOff = document.getElementById('v-plate-off');
     if (vPlateOff) {
         vPlateOff.addEventListener('input', function(e) {
@@ -912,3 +1050,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ==================== EXPORTAÇÕES ====================
+window.openNewVehicleModal = openNewVehicleModal;
+window.openEditVehicleModal = openEditVehicleModal;
+window.renderMaintenanceList = renderMaintenanceList;
+window.addMaintenance = addMaintenance;
+window.deleteMaintenance = deleteMaintenance;
+window.openQuickUnitModal = openQuickUnitModal;
+window.saveQuickUnit = saveQuickUnit;
+window.openUnitModal = openUnitModal;
+window.saveUnitForm = saveUnitForm;
+window.confirmDeleteVehicle = confirmDeleteVehicle;
+window.confirmDeleteUnit = confirmDeleteUnit;
+window.confirmDeleteAction = confirmDeleteAction;
+window.updateCompanyInfo = updateCompanyInfo;
+window.saveConfigs = saveConfigs;
+window.saveVehicle = saveVehicle;
+window.toggleRentalField = toggleRentalField;
+window.switchTab = switchTab;
+window.updateUnitSelect = updateUnitSelect;
+window.openViewVehicleModal = openViewVehicleModal;
+window.closeViewVehicleModal = closeViewVehicleModal;
+window.exportToCSV = exportToCSV;
+window.exportVehiclesToCSV = exportVehiclesToCSV;
+window.openNewMaintenanceModal = openNewMaintenanceModal;
+window.scheduleMaintenance = scheduleMaintenance;
+window.exportMaintenanceReport = exportMaintenanceReport;
+window.getMaintenanceTypeLabel = getMaintenanceTypeLabel;
+window.searchVehicleByPlate = searchVehicleByPlate;
+window.selectVehicleForMaintenance = selectVehicleForMaintenance;
+window.resetMaintenanceVehicle = resetMaintenanceVehicle;
